@@ -465,7 +465,7 @@ class ManualGIFDashboard:
             logger.info(f"Removed old game {game_id}")
     
     def create_gif_for_play(self, play_id: str) -> Dict:
-        """Create a GIF for the specified play and send to Discord"""
+        """Create a REAL VIDEO GIF for the specified play and send to Discord"""
         try:
             # Find the play
             play = None
@@ -486,7 +486,9 @@ class ManualGIFDashboard:
             # Mark as processing
             play.gif_processing = True
             
-            # Create GIF using existing integration
+            logger.info(f"Creating VIDEO GIF for {play.event} by {play.batter} in game {play.game_id}")
+            
+            # Create GIF using existing integration - ONLY REAL VIDEO, NO FALLBACKS
             gif_path = self.gif_integration.get_gif_for_play(
                 game_id=play.game_id,
                 play_id=int(play.play_id.split('_')[1]),
@@ -499,6 +501,8 @@ class ManualGIFDashboard:
             )
             
             if gif_path and os.path.exists(gif_path):
+                logger.info(f"Successfully created VIDEO GIF: {gif_path}")
+                
                 # Send to Discord
                 discord_data = {
                     'event': play.event,
@@ -518,23 +522,30 @@ class ManualGIFDashboard:
                 # Clean up GIF file immediately
                 try:
                     os.remove(gif_path)
+                    logger.info(f"Cleaned up GIF file: {gif_path}")
                 except:
                     pass
                 
                 if success:
                     play.gif_created = True
                     play.gif_processing = False
-                    return {"success": True, "message": "GIF created and sent to Discord"}
+                    logger.info(f"✅ VIDEO GIF sent to Discord successfully for {play.event}")
+                    return {"success": True, "message": "VIDEO GIF created and sent to Discord"}
                 else:
                     play.gif_processing = False
-                    return {"success": False, "error": "Failed to send to Discord"}
+                    logger.error(f"❌ Failed to send VIDEO GIF to Discord")
+                    return {"success": False, "error": "Failed to send VIDEO GIF to Discord"}
             else:
                 play.gif_processing = False
-                return {"success": False, "error": "Failed to create GIF"}
+                logger.warning(f"⚠️ No video data available for {play.event} by {play.batter}")
+                return {"success": False, "error": "No video data available for this play. Only plays with actual video footage can be converted to GIFs."}
                 
         except Exception as e:
-            logger.error(f"Error creating GIF for play {play_id}: {e}")
-            return {"success": False, "error": str(e)}
+            logger.error(f"Error creating VIDEO GIF for play {play_id}: {e}")
+            # Make sure to reset processing state
+            if 'play' in locals() and play:
+                play.gif_processing = False
+            return {"success": False, "error": f"Error creating VIDEO GIF: {str(e)}"}
 
 # Global dashboard instance
 dashboard = ManualGIFDashboard()

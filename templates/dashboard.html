@@ -730,11 +730,11 @@
 
         function createGifButton(play) {
             if (play.gif_created) {
-                return '<button class="btn-gif" disabled>✅ GIF Sent</button>';
+                return '<button class="btn-gif" disabled>✅ Video GIF Sent</button>';
             } else if (play.gif_processing) {
-                return '<button class="btn-gif" disabled><span class="loading"></span> Creating...</button>';
+                return '<button class="btn-gif" disabled><span class="loading"></span> Creating Video...</button>';
             } else {
-                return `<button class="btn-gif" onclick="createGif('${play.play_id}', event)">🎬 Create GIF</button>`;
+                return `<button class="btn-gif" onclick="createGif('${play.play_id}', event)">🎬 Create Video GIF</button>`;
             }
         }
 
@@ -746,7 +746,7 @@
                 const originalText = button.innerHTML;
                 
                 // Update button to show loading
-                button.innerHTML = '<span class="loading"></span> Creating...';
+                button.innerHTML = '<span class="loading"></span> Creating Video GIF...';
                 button.disabled = true;
 
                 const response = await fetch('/api/create_gif', {
@@ -760,23 +760,31 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    button.innerHTML = '✅ GIF Sent';
-                    showToast('GIF created and sent to Discord!', 'success');
+                    button.innerHTML = '✅ Video GIF Sent';
+                    showToast('🎬 Video GIF created and sent to Discord!', 'success');
                     
                     // Refresh data to update play status
                     setTimeout(refreshData, 1000);
                 } else {
                     button.innerHTML = originalText;
                     button.disabled = false;
-                    showToast(`Failed to create GIF: ${result.error}`, 'error');
+                    
+                    // Show specific error message
+                    if (result.error.includes('No video data available')) {
+                        showToast('⚠️ No video footage available for this play. Only plays with MLB video can be converted to GIFs.', 'warning');
+                    } else if (result.error.includes('No Statcast data')) {
+                        showToast('⚠️ No Statcast data found for this play. Video may not be available yet.', 'warning');
+                    } else {
+                        showToast(`❌ Failed to create GIF: ${result.error}`, 'error');
+                    }
                 }
 
             } catch (error) {
                 console.error('Error creating GIF:', error);
-                showToast('Failed to create GIF', 'error');
+                showToast('❌ Failed to create video GIF', 'error');
                 
                 // Reset button
-                event.target.innerHTML = '🎬 Create GIF';
+                event.target.innerHTML = '🎬 Create Video GIF';
                 event.target.disabled = false;
             }
         }

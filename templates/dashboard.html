@@ -16,27 +16,28 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             min-height: 100vh;
-            padding: 20px;
+            padding: 15px;
+            font-size: 14px;
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
         }
 
         .header {
             text-align: center;
-            padding: 30px;
+            padding: 20px;
             background: rgba(0,0,0,0.3);
-            border-radius: 20px;
+            border-radius: 15px;
             backdrop-filter: blur(15px);
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             border: 1px solid rgba(255,255,255,0.1);
         }
 
         .header h1 {
-            font-size: 3em;
-            margin-bottom: 10px;
+            font-size: 2.2em;
+            margin-bottom: 8px;
             background: linear-gradient(45deg, #ff6b35, #f7931e);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -44,7 +45,7 @@
         }
 
         .header p {
-            font-size: 1.3em;
+            font-size: 1.1em;
             opacity: 0.9;
         }
 
@@ -53,21 +54,24 @@
             justify-content: space-between;
             align-items: center;
             background: rgba(0,0,0,0.4);
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 30px;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
             backdrop-filter: blur(10px);
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .status-item {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
+            font-size: 0.9em;
         }
 
         .status-indicator {
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
             background: #28a745;
             animation: pulse 2s infinite;
@@ -78,6 +82,25 @@
             animation: none;
         }
 
+        .game-summary {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .summary-item {
+            background: rgba(255,255,255,0.1);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+
+        .summary-item.live { background: rgba(40, 167, 69, 0.3); }
+        .summary-item.warmup { background: rgba(255, 193, 7, 0.3); }
+        .summary-item.scheduled { background: rgba(108, 117, 125, 0.3); }
+        .summary-item.final { background: rgba(111, 66, 193, 0.3); }
+
         @keyframes pulse {
             0% { opacity: 1; }
             50% { opacity: 0.5; }
@@ -86,19 +109,21 @@
 
         .controls {
             display: flex;
-            gap: 15px;
-            margin-bottom: 30px;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
         }
 
         .btn {
-            padding: 12px 24px;
+            padding: 8px 16px;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             text-decoration: none;
             display: inline-block;
+            font-size: 0.9em;
         }
 
         .btn-primary {
@@ -117,26 +142,43 @@
         }
 
         .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
         }
 
         .games-grid {
             display: grid;
-            gap: 25px;
+            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
         }
 
         .game-card {
             background: rgba(0,0,0,0.4);
-            border-radius: 20px;
-            padding: 25px;
+            border-radius: 15px;
+            padding: 18px;
             backdrop-filter: blur(15px);
             border: 1px solid rgba(255,255,255,0.1);
             transition: all 0.3s ease;
         }
 
+        .game-card.live {
+            border-left: 4px solid #28a745;
+        }
+
+        .game-card.warmup {
+            border-left: 4px solid #ffc107;
+        }
+
+        .game-card.scheduled {
+            border-left: 4px solid #6c757d;
+        }
+
+        .game-card.final {
+            border-left: 4px solid #6f42c1;
+        }
+
         .game-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-3px);
             border-color: rgba(255,107,53,0.5);
         }
 
@@ -144,63 +186,63 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
             border-bottom: 2px solid rgba(255,107,53,0.3);
         }
 
         .game-matchup {
-            font-size: 1.4em;
+            font-size: 1.2em;
             font-weight: bold;
             color: #ff6b35;
         }
 
         .game-score {
-            font-size: 1.2em;
+            font-size: 1em;
             background: rgba(255,255,255,0.1);
-            padding: 8px 16px;
-            border-radius: 12px;
+            padding: 6px 12px;
+            border-radius: 10px;
         }
 
         .game-info {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
         }
 
         .info-item {
             text-align: center;
             background: rgba(255,255,255,0.05);
-            padding: 15px;
-            border-radius: 10px;
+            padding: 10px;
+            border-radius: 8px;
         }
 
         .info-label {
-            font-size: 0.9em;
+            font-size: 0.75em;
             opacity: 0.7;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
         }
 
         .info-value {
-            font-size: 1.1em;
+            font-size: 0.9em;
             font-weight: bold;
             color: #00ff88;
         }
 
         .plays-section {
-            margin-top: 20px;
+            margin-top: 15px;
         }
 
         .plays-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
 
         .plays-title {
-            font-size: 1.3em;
+            font-size: 1.1em;
             font-weight: bold;
             color: #ff6b35;
         }
@@ -208,24 +250,24 @@
         .plays-count {
             background: linear-gradient(45deg, #6f42c1, #e83e8c);
             color: white;
-            padding: 6px 12px;
-            border-radius: 15px;
-            font-size: 0.9em;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
             font-weight: bold;
         }
 
         .plays-list {
-            max-height: 500px;
+            max-height: 400px;
             overflow-y: auto;
-            padding-right: 10px;
+            padding-right: 8px;
         }
 
         .play-item {
             background: rgba(255,255,255,0.05);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 15px;
-            border-left: 4px solid transparent;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-left: 3px solid transparent;
             transition: all 0.3s ease;
             cursor: pointer;
         }
@@ -233,7 +275,7 @@
         .play-item:hover {
             background: rgba(255,255,255,0.1);
             border-left-color: #ff6b35;
-            transform: translateX(5px);
+            transform: translateX(3px);
         }
 
         .play-item.high-impact {
@@ -254,11 +296,11 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
 
         .play-event {
-            font-size: 1.2em;
+            font-size: 1em;
             font-weight: bold;
             color: #00ff88;
         }
@@ -266,66 +308,67 @@
         .play-impact {
             background: linear-gradient(45deg, #6f42c1, #e83e8c);
             color: white;
-            padding: 6px 12px;
-            border-radius: 15px;
-            font-size: 0.9em;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
             font-weight: bold;
         }
 
         .play-details {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 10px;
-            margin-bottom: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 8px;
+            margin-bottom: 12px;
         }
 
         .detail-item {
             text-align: center;
             background: rgba(255,255,255,0.05);
-            padding: 8px;
-            border-radius: 8px;
+            padding: 6px;
+            border-radius: 6px;
         }
 
         .detail-label {
-            font-size: 0.8em;
+            font-size: 0.7em;
             opacity: 0.7;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
 
         .detail-value {
-            font-size: 0.9em;
+            font-size: 0.8em;
             font-weight: bold;
         }
 
         .play-description {
             background: rgba(0,0,0,0.3);
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
             font-style: italic;
             border-left: 3px solid #007bff;
+            font-size: 0.9em;
         }
 
         .play-actions {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             justify-content: flex-end;
         }
 
         .btn-gif {
-            padding: 8px 16px;
-            font-size: 0.9em;
+            padding: 6px 12px;
+            font-size: 0.8em;
             background: linear-gradient(45deg, #ff6b35, #f7931e);
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 5px;
             cursor: pointer;
             transition: all 0.3s ease;
         }
 
         .btn-gif:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 3px 10px rgba(255, 107, 53, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(255, 107, 53, 0.4);
         }
 
         .btn-gif:disabled {
@@ -336,8 +379,8 @@
 
         .loading {
             display: inline-block;
-            width: 16px;
-            height: 16px;
+            width: 14px;
+            height: 14px;
             border: 2px solid #ffffff40;
             border-radius: 50%;
             border-top-color: #fff;
@@ -350,36 +393,36 @@
 
         .no-games {
             text-align: center;
-            padding: 60px;
+            padding: 40px;
             background: rgba(0,0,0,0.3);
-            border-radius: 20px;
+            border-radius: 15px;
             backdrop-filter: blur(10px);
         }
 
         .no-games h3 {
-            font-size: 1.5em;
-            margin-bottom: 15px;
+            font-size: 1.3em;
+            margin-bottom: 12px;
             color: #ff6b35;
         }
 
         .no-games p {
             opacity: 0.7;
-            font-size: 1.1em;
+            font-size: 1em;
         }
 
         /* Scrollbar styling */
         ::-webkit-scrollbar {
-            width: 8px;
+            width: 6px;
         }
 
         ::-webkit-scrollbar-track {
             background: rgba(255,255,255,0.1);
-            border-radius: 4px;
+            border-radius: 3px;
         }
 
         ::-webkit-scrollbar-thumb {
             background: rgba(255,107,53,0.6);
-            border-radius: 4px;
+            border-radius: 3px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
@@ -389,28 +432,24 @@
         /* Responsive design */
         @media (max-width: 768px) {
             .header h1 {
-                font-size: 2em;
+                font-size: 1.8em;
             }
 
             .status-bar {
                 flex-direction: column;
-                gap: 15px;
+                gap: 10px;
             }
 
             .controls {
-                flex-direction: column;
+                justify-content: center;
             }
 
-            .game-header {
-                flex-direction: column;
-                gap: 10px;
-                text-align: center;
+            .games-grid {
+                grid-template-columns: 1fr;
             }
 
-            .play-header {
-                flex-direction: column;
-                gap: 10px;
-                text-align: center;
+            .game-info {
+                grid-template-columns: repeat(2, 1fr);
             }
 
             .play-details {
@@ -418,241 +457,71 @@
             }
         }
 
-        .game-card.scheduled {
-            border-left: 4px solid #ffc107;
-            background: rgba(255, 193, 7, 0.1);
-        }
-
-        .game-card.live {
+        /* Toast notifications */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
             border-left: 4px solid #28a745;
-            background: rgba(40, 167, 69, 0.1);
-        }
-
-        .game-card.final {
-            border-left: 4px solid #6c757d;
-            background: rgba(108, 117, 125, 0.1);
-        }
-
-        .scheduled-info {
-            text-align: center;
-            padding: 20px;
-            background: rgba(255, 193, 7, 0.1);
-            border-radius: 10px;
-            margin-top: 15px;
-        }
-
-        .start-time {
-            font-size: 1.3em;
-            font-weight: bold;
-            color: #ffc107;
-            margin-bottom: 10px;
-        }
-
-        .scheduled-message {
-            opacity: 0.8;
-            font-style: italic;
-        }
-
-        /* Collapsible game functionality */
-        .game-card.collapsed .plays-section {
-            display: none;
-        }
-
-        .game-header {
-            cursor: pointer;
-            position: relative;
-        }
-
-        .game-header:hover {
-            background: rgba(255,255,255,0.05);
-            border-radius: 10px;
-            padding: 10px;
-            margin: -10px -10px 10px -10px;
-        }
-
-        .expand-indicator {
-            font-size: 1.2em;
-            margin-left: 15px;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            transform: translateX(100%);
             transition: transform 0.3s ease;
         }
 
-        .game-card.collapsed .expand-indicator {
-            transform: rotate(-90deg);
+        .toast.show {
+            transform: translateX(0);
         }
 
-        /* Global filters */
-        .global-filters {
-            background: rgba(0,0,0,0.4);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            backdrop-filter: blur(10px);
+        .toast.error {
+            border-left-color: #dc3545;
         }
 
-        .filter-row {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .filter-label {
-            font-weight: bold;
-            color: #ff6b35;
-            margin-right: 10px;
-        }
-
-        .filter-btn {
-            padding: 6px 12px;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 15px;
-            color: white;
-            font-size: 0.85em;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .filter-btn:hover {
-            background: rgba(255,107,53,0.3);
-            border-color: rgba(255,107,53,0.5);
-        }
-
-        .filter-btn.active {
-            background: rgba(255,107,53,0.6);
-            border-color: rgba(255,107,53,0.8);
-        }
-
-        .search-input {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 8px;
-            padding: 8px 12px;
-            color: white;
-            font-size: 0.9em;
-            width: 200px;
-        }
-
-        .search-input::placeholder {
-            color: rgba(255,255,255,0.5);
-        }
-
-        .expand-all-btn {
-            background: linear-gradient(45deg, #6f42c1, #e83e8c);
-            color: white;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.9em;
-            transition: all 0.3s ease;
-        }
-
-        .expand-all-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 3px 10px rgba(111, 66, 193, 0.4);
-        }
-
-        /* Inning organization */
-        .inning-section {
-            margin-bottom: 20px;
-        }
-
-        .inning-header {
-            background: rgba(255,255,255,0.1);
-            padding: 10px 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            font-weight: bold;
-            color: #00ff88;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .inning-header:hover {
-            background: rgba(255,255,255,0.15);
-        }
-
-        .inning-header.collapsed + .inning-plays {
-            display: none;
-        }
-
-        .inning-plays {
-            margin-left: 15px;
-        }
-
-        .play-count-summary {
-            font-size: 0.85em;
-            opacity: 0.8;
+        .toast.warning {
+            border-left-color: #ffc107;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎯 Manual MLB GIF Dashboard</h1>
-            <p>Select any play to create and send a GIF to Discord</p>
+            <h1>⚾ MLB GIF Dashboard</h1>
+            <p>Manual Play Selection & GIF Creation</p>
         </div>
 
         <div class="status-bar">
             <div class="status-item">
-                <div class="status-indicator" id="monitoringStatus"></div>
-                <span>Monitoring: <strong id="monitoringText">Active</strong></span>
+                <div class="status-indicator" id="monitoring-indicator"></div>
+                <span>Monitoring: <span id="monitoring-status">Starting...</span></span>
             </div>
             <div class="status-item">
-                <span>Last Update: <strong id="lastUpdate">Never</strong></span>
+                <span>Last Update: <span id="last-update">Never</span></span>
             </div>
-            <div class="status-item">
-                <span>📅 Scheduled: <strong id="scheduledCount">0</strong></span>
-            </div>
-            <div class="status-item">
-                <span>🟢 Live: <strong id="liveCount">0</strong></span>
-            </div>
-            <div class="status-item">
-                <span>⚫ Final: <strong id="finalCount">0</strong></span>
-            </div>
-            <div class="status-item">
-                <span>Total Plays: <strong id="playsCount">0</strong></span>
+            <div class="game-summary" id="game-summary">
+                <!-- Game counts will be populated here -->
             </div>
         </div>
 
         <div class="controls">
-            <a href="/start_monitoring" class="btn btn-success">▶️ Start Monitoring</a>
-            <a href="/stop_monitoring" class="btn btn-danger">⏹️ Stop Monitoring</a>
-            <button onclick="refreshData()" class="btn btn-primary">🔄 Refresh Now</button>
+            <button class="btn btn-success" onclick="startMonitoring()">▶️ Start Monitoring</button>
+            <button class="btn btn-danger" onclick="stopMonitoring()">⏹️ Stop Monitoring</button>
+            <button class="btn btn-primary" onclick="refreshData()">🔄 Refresh</button>
         </div>
 
-        <div class="global-filters">
-            <div class="filter-row">
-                <span class="filter-label">🎯 Show:</span>
-                <button class="filter-btn active" onclick="toggleFilter('all')">All Plays</button>
-                <button class="filter-btn" onclick="toggleFilter('high-impact')">High Impact Only</button>
-                <button class="filter-btn" onclick="toggleFilter('recent')">Last 30 Minutes</button>
-                <button class="filter-btn" onclick="toggleFilter('hits')">Hits & Home Runs</button>
-            </div>
-            <div class="filter-row">
-                <span class="filter-label">🔍 Search:</span>
-                <input type="text" class="search-input" placeholder="Player name, team, or event..." id="searchInput" onkeyup="filterPlays()">
-                <button class="expand-all-btn" onclick="toggleAllGames()">📋 Expand All Games</button>
-            </div>
-        </div>
-
-        <div id="gamesContainer" class="games-grid">
+        <div id="games-container">
             <div class="no-games">
-                <h3>🔄 Loading Games...</h3>
-                <p>Fetching today's MLB games and plays...</p>
+                <h3>Loading Games...</h3>
+                <p>Please wait while we fetch today's MLB games and plays.</p>
             </div>
         </div>
     </div>
 
     <script>
         let isRefreshing = false;
-        let currentFilter = 'all';
-        let allGamesExpanded = false;
 
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
@@ -682,28 +551,25 @@
 
             } catch (error) {
                 console.error('Error refreshing data:', error);
-                showError('Failed to refresh data');
+                showToast('Failed to refresh data', 'error');
             } finally {
                 isRefreshing = false;
             }
         }
 
         function updateStatusBar(status, games) {
-            const monitoringStatus = document.getElementById('monitoringStatus');
-            const monitoringText = document.getElementById('monitoringText');
-            const lastUpdate = document.getElementById('lastUpdate');
-            const scheduledCount = document.getElementById('scheduledCount');
-            const liveCount = document.getElementById('liveCount');
-            const finalCount = document.getElementById('finalCount');
-            const playsCount = document.getElementById('playsCount');
+            const monitoringIndicator = document.getElementById('monitoring-indicator');
+            const monitoringStatus = document.getElementById('monitoring-status');
+            const lastUpdate = document.getElementById('last-update');
+            const gameSummary = document.getElementById('game-summary');
 
             // Update monitoring status
             if (status.monitoring) {
-                monitoringStatus.classList.remove('inactive');
-                monitoringText.textContent = 'Active';
+                monitoringIndicator.classList.remove('inactive');
+                monitoringStatus.textContent = 'Active';
             } else {
-                monitoringStatus.classList.add('inactive');
-                monitoringText.textContent = 'Inactive';
+                monitoringIndicator.classList.add('inactive');
+                monitoringStatus.textContent = 'Inactive';
             }
 
             // Update last update time
@@ -712,16 +578,18 @@
                 lastUpdate.textContent = updateTime.toLocaleTimeString();
             }
 
-            // Update counts from games summary
+            // Update game summary
             const summary = games.summary || {};
-            scheduledCount.textContent = summary.scheduled || 0;
-            liveCount.textContent = summary.live || 0;
-            finalCount.textContent = summary.final || 0;
-            playsCount.textContent = status.total_plays;
+            gameSummary.innerHTML = `
+                <div class="summary-item live">🟢 Live: ${summary.live || 0}</div>
+                <div class="summary-item warmup">🟡 Warmup: ${summary.warmup || 0}</div>
+                <div class="summary-item scheduled">📅 Scheduled: ${summary.scheduled || 0}</div>
+                <div class="summary-item final">⚫ Final: ${summary.final || 0}</div>
+            `;
         }
 
         function updateGamesDisplay(games) {
-            const container = document.getElementById('gamesContainer');
+            const container = document.getElementById('games-container');
 
             if (!games || games.length === 0) {
                 container.innerHTML = `
@@ -733,25 +601,17 @@
                 return;
             }
 
-            container.innerHTML = games.map(game => createGameCard(game)).join('');
+            container.innerHTML = `<div class="games-grid">${games.map(game => createGameCard(game)).join('')}</div>`;
         }
 
         function createGameCard(game) {
             const sortedPlays = game.plays.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
             
-            // Determine game status for styling
-            const isScheduled = game.game_state.toLowerCase().includes('scheduled') || game.game_state.toLowerCase().includes('warmup');
-            const isLive = game.game_state.toLowerCase().includes('live') || game.game_state.toLowerCase().includes('progress');
-            const isFinal = game.game_state.toLowerCase().includes('final') || game.game_state.toLowerCase().includes('completed');
+            let gameClass = game.category || 'other';
             
-            let gameClass = '';
-            if (isScheduled) gameClass = 'scheduled';
-            else if (isLive) gameClass = 'live';
-            else if (isFinal) gameClass = 'final';
-
             // Format game time for scheduled games
             let gameTimeDisplay = '';
-            if (isScheduled && game.game_time) {
+            if (game.category === 'scheduled' && game.game_time) {
                 try {
                     const gameDate = new Date(game.game_time);
                     gameTimeDisplay = gameDate.toLocaleTimeString('en-US', {
@@ -764,32 +624,14 @@
                 }
             }
 
-            // Group plays by inning for better organization
-            const playsByInning = {};
-            sortedPlays.forEach(play => {
-                const inningKey = `${play.inning}${play.half_inning}`;
-                if (!playsByInning[inningKey]) {
-                    playsByInning[inningKey] = [];
-                }
-                playsByInning[inningKey].push(play);
-            });
-
-            const inningKeys = Object.keys(playsByInning).sort((a, b) => {
-                const aNum = parseInt(a.replace(/[TB]/g, ''));
-                const bNum = parseInt(b.replace(/[TB]/g, ''));
-                if (aNum !== bNum) return bNum - aNum; // Newest inning first
-                return a.includes('B') ? -1 : 1; // Bottom before top within same inning
-            });
-
             return `
-                <div class="game-card ${gameClass} collapsed" id="game-${game.game_id}">
-                    <div class="game-header" onclick="toggleGame(${game.game_id})">
+                <div class="game-card ${gameClass}">
+                    <div class="game-header">
                         <div class="game-matchup">
                             ${game.away_team} @ ${game.home_team}
-                            <span class="expand-indicator">🔽</span>
                         </div>
                         <div class="game-score">
-                            ${isScheduled ? gameTimeDisplay : `${game.away_score} - ${game.home_score}`}
+                            ${game.category === 'scheduled' ? gameTimeDisplay : `${game.away_score} - ${game.home_score}`}
                         </div>
                     </div>
 
@@ -798,7 +640,7 @@
                             <div class="info-label">Status</div>
                             <div class="info-value">${game.game_state}</div>
                         </div>
-                        ${!isScheduled ? `
+                        ${game.category !== 'scheduled' ? `
                         <div class="info-item">
                             <div class="info-label">Inning</div>
                             <div class="info-value">${game.inning} ${game.inning_state}</div>
@@ -814,10 +656,10 @@
                         </div>
                     </div>
 
-                    ${isScheduled ? `
-                    <div class="scheduled-info">
-                        <div class="start-time">🕒 ${gameTimeDisplay}</div>
-                        <div class="scheduled-message">Game hasn't started yet - check back when it begins!</div>
+                    ${game.category === 'scheduled' ? `
+                    <div style="text-align: center; padding: 15px; background: rgba(255, 193, 7, 0.1); border-radius: 8px; margin-top: 15px;">
+                        <div style="font-size: 1.1em; font-weight: bold; color: #ffc107; margin-bottom: 8px;">🕒 ${gameTimeDisplay}</div>
+                        <div style="opacity: 0.8; font-style: italic;">Game hasn't started yet - check back when it begins!</div>
                     </div>
                     ` : `
                     <div class="plays-section">
@@ -826,28 +668,10 @@
                             <div class="plays-count">${game.plays.length} plays</div>
                         </div>
                         <div class="plays-list">
-                            ${inningKeys.length > 0 ? inningKeys.map(inningKey => createInningSection(inningKey, playsByInning[inningKey])).join('') : '<div style="text-align: center; padding: 20px; opacity: 0.7;">No plays yet - game just started!</div>'}
+                            ${sortedPlays.length > 0 ? sortedPlays.slice(0, 10).map(play => createPlayItem(play)).join('') : '<div style="text-align: center; padding: 15px; opacity: 0.7;">No plays yet - game just started!</div>'}
                         </div>
                     </div>
                     `}
-                </div>
-            `;
-        }
-
-        function createInningSection(inningKey, plays) {
-            const inning = inningKey.replace(/[TB]/g, '');
-            const half = inningKey.includes('T') ? 'Top' : 'Bottom';
-            const highImpactCount = plays.filter(p => p.impact_score > 0.2).length;
-            
-            return `
-                <div class="inning-section">
-                    <div class="inning-header" onclick="toggleInning('${inningKey}')">
-                        <span>📍 ${half} ${inning}</span>
-                        <span class="play-count-summary">${plays.length} plays ${highImpactCount > 0 ? `(${highImpactCount} high-impact)` : ''}</span>
-                    </div>
-                    <div class="inning-plays" id="inning-${inningKey}">
-                        ${plays.map(play => createPlayItem(play)).join('')}
-                    </div>
                 </div>
             `;
         }
@@ -857,10 +681,10 @@
             const statusClass = play.gif_created ? 'gif-created' : (play.gif_processing ? 'gif-processing' : '');
 
             return `
-                <div class="play-item ${impactClass} ${statusClass}" onclick="selectPlay('${play.play_id}')">
+                <div class="play-item ${impactClass} ${statusClass}">
                     <div class="play-header">
                         <div class="play-event">${play.event}</div>
-                        <div class="play-impact">${(play.impact_score * 100).toFixed(1)}% Impact</div>
+                        <div class="play-impact">${(play.impact_score * 100).toFixed(1)}%</div>
                     </div>
 
                     <div class="play-details">
@@ -914,11 +738,6 @@
             }
         }
 
-        function selectPlay(playId) {
-            // Could add play selection logic here if needed
-            console.log('Selected play:', playId);
-        }
-
         async function createGif(playId, event) {
             event.stopPropagation();
 
@@ -942,19 +761,19 @@
 
                 if (result.success) {
                     button.innerHTML = '✅ GIF Sent';
-                    showSuccess('GIF created and sent to Discord!');
+                    showToast('GIF created and sent to Discord!', 'success');
                     
                     // Refresh data to update play status
                     setTimeout(refreshData, 1000);
                 } else {
                     button.innerHTML = originalText;
                     button.disabled = false;
-                    showError(`Failed to create GIF: ${result.error}`);
+                    showToast(`Failed to create GIF: ${result.error}`, 'error');
                 }
 
             } catch (error) {
                 console.error('Error creating GIF:', error);
-                showError('Failed to create GIF');
+                showToast('Failed to create GIF', 'error');
                 
                 // Reset button
                 event.target.innerHTML = '🎬 Create GIF';
@@ -962,159 +781,48 @@
             }
         }
 
-        function showSuccess(message) {
-            // Simple toast notification
-            const toast = document.createElement('div');
-            toast.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: #28a745;
-                color: white;
-                padding: 15px 20px;
-                border-radius: 8px;
-                z-index: 1000;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            `;
-            toast.textContent = message;
-            document.body.appendChild(toast);
-
-            setTimeout(() => {
-                toast.remove();
-            }, 5000);
-        }
-
-        function showError(message) {
-            // Simple error notification
-            const toast = document.createElement('div');
-            toast.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: #dc3545;
-                color: white;
-                padding: 15px 20px;
-                border-radius: 8px;
-                z-index: 1000;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            `;
-            toast.textContent = message;
-            document.body.appendChild(toast);
-
-            setTimeout(() => {
-                toast.remove();
-            }, 5000);
-        }
-
-        function toggleGame(gameId) {
-            const gameCard = document.getElementById(`game-${gameId}`);
-            if (gameCard) {
-                gameCard.classList.toggle('collapsed');
-            }
-        }
-
-        function toggleInning(inningKey) {
-            const inningPlays = document.getElementById(`inning-${inningKey}`);
-            const inningHeader = inningPlays ? inningPlays.previousElementSibling : null;
-            
-            if (inningPlays && inningHeader) {
-                inningHeader.classList.toggle('collapsed');
-            }
-        }
-
-        function toggleAllGames() {
-            const gameCards = document.querySelectorAll('.game-card');
-            allGamesExpanded = !allGamesExpanded;
-            
-            gameCards.forEach(card => {
-                if (allGamesExpanded) {
-                    card.classList.remove('collapsed');
+        async function startMonitoring() {
+            try {
+                const response = await fetch('/start_monitoring');
+                if (response.ok) {
+                    showToast('Monitoring started', 'success');
+                    refreshData();
                 } else {
-                    card.classList.add('collapsed');
+                    showToast('Failed to start monitoring', 'error');
                 }
-            });
-            
-            const button = document.querySelector('.expand-all-btn');
-            button.textContent = allGamesExpanded ? '📋 Collapse All Games' : '📋 Expand All Games';
+            } catch (error) {
+                showToast('Failed to start monitoring', 'error');
+            }
         }
 
-        function toggleFilter(filterType) {
-            // Update active filter button
-            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-            
-            currentFilter = filterType;
-            filterPlays();
-        }
-
-        function filterPlays() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const playItems = document.querySelectorAll('.play-item');
-            
-            playItems.forEach(playItem => {
-                const playData = extractPlayData(playItem);
-                let shouldShow = true;
-                
-                // Apply current filter
-                switch (currentFilter) {
-                    case 'high-impact':
-                        shouldShow = playData.impactScore > 0.2;
-                        break;
-                    case 'recent':
-                        const playTime = new Date(playData.timestamp);
-                        const now = new Date();
-                        const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000);
-                        shouldShow = playTime > thirtyMinutesAgo;
-                        break;
-                    case 'hits':
-                        shouldShow = playData.event.toLowerCase().includes('single') ||
-                                   playData.event.toLowerCase().includes('double') ||
-                                   playData.event.toLowerCase().includes('triple') ||
-                                   playData.event.toLowerCase().includes('home run');
-                        break;
-                    case 'all':
-                    default:
-                        shouldShow = true;
-                        break;
+        async function stopMonitoring() {
+            try {
+                const response = await fetch('/stop_monitoring');
+                if (response.ok) {
+                    showToast('Monitoring stopped', 'success');
+                    refreshData();
+                } else {
+                    showToast('Failed to stop monitoring', 'error');
                 }
-                
-                // Apply search filter
-                if (shouldShow && searchTerm) {
-                    shouldShow = playData.batter.toLowerCase().includes(searchTerm) ||
-                               playData.pitcher.toLowerCase().includes(searchTerm) ||
-                               playData.event.toLowerCase().includes(searchTerm) ||
-                               playData.description.toLowerCase().includes(searchTerm);
-                }
-                
-                playItem.style.display = shouldShow ? 'block' : 'none';
-            });
-            
-            // Update inning section visibility
-            updateInningVisibility();
+            } catch (error) {
+                showToast('Failed to stop monitoring', 'error');
+            }
         }
 
-        function extractPlayData(playItem) {
-            return {
-                event: playItem.querySelector('.play-event').textContent,
-                description: playItem.querySelector('.play-description').textContent,
-                batter: playItem.querySelector('.detail-value').textContent,
-                pitcher: playItem.querySelectorAll('.detail-value')[5] ? playItem.querySelectorAll('.detail-value')[5].textContent : '',
-                impactScore: parseFloat(playItem.querySelector('.play-impact').textContent) / 100,
-                timestamp: new Date() // This would need to be properly extracted
-            };
-        }
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
 
-        function updateInningVisibility() {
-            const inningSections = document.querySelectorAll('.inning-section');
-            
-            inningSections.forEach(section => {
-                const visiblePlays = section.querySelectorAll('.play-item[style*="block"], .play-item:not([style*="none"])');
-                const hasVisiblePlays = Array.from(section.querySelectorAll('.play-item')).some(item => 
-                    !item.style.display || item.style.display !== 'none'
-                );
-                
-                section.style.display = hasVisiblePlays ? 'block' : 'none';
-            });
+            // Show toast
+            setTimeout(() => toast.classList.add('show'), 100);
+
+            // Hide and remove toast
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
     </script>
 </body>

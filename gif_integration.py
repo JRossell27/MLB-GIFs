@@ -17,6 +17,8 @@ from pathlib import Path
 import csv
 from io import StringIO
 import re
+from PIL import Image, ImageDraw, ImageFont
+import io
 
 logger = logging.getLogger(__name__)
 
@@ -51,14 +53,16 @@ class BaseballSavantGIFIntegration:
             
             if not statcast_data:
                 logger.warning(f"No Statcast data found for play {play_id} in game {game_id}")
-                return None
+                # Try to create a simple GIF without Statcast data
+                return self.create_fallback_gif(game_id, play_id, mlb_play_data)
             
             # Get the animation URL
             animation_url = self.get_play_animation_url(game_id, play_id, statcast_data, mlb_play_data)
             
             if not animation_url:
                 logger.warning(f"No animation URL found for play {play_id} in game {game_id}")
-                return None
+                # Try fallback GIF creation
+                return self.create_fallback_gif(game_id, play_id, mlb_play_data)
             
             # Download and convert to GIF
             output_filename = f"play_{game_id}_{play_id}_{int(time.time())}.gif"
@@ -71,15 +75,20 @@ class BaseballSavantGIFIntegration:
                 return str(output_path)
             else:
                 logger.error(f"Failed to create GIF for play {play_id}")
-                return None
+                # Try fallback GIF creation
+                return self.create_fallback_gif(game_id, play_id, mlb_play_data)
                 
         except Exception as e:
             logger.error(f"Error creating GIF for play {play_id}: {e}")
-            return None
+            # Try fallback GIF creation
+            return self.create_fallback_gif(game_id, play_id, mlb_play_data)
     
     def get_statcast_data_for_play(self, game_id: int, play_id: int, game_date: str, mlb_play_data: Dict = None) -> Optional[Dict]:
         """Get Statcast data for a specific play"""
         try:
+            # Extract year from game_date 
+            year = game_date.split('-')[0]
+            
             params = {
                 'all': 'true',
                 'hfPT': '',
@@ -92,7 +101,7 @@ class BaseballSavantGIFIntegration:
                 'hfNewZones': '',
                 'hfGT': 'R|',
                 'hfC': '',
-                'hfSea': '2025|',
+                'hfSea': f'{year}|',  # Use dynamic year instead of hardcoded 2025
                 'hfSit': '',
                 'player_type': 'batter',
                 'hfOuts': '',
@@ -124,6 +133,7 @@ class BaseballSavantGIFIntegration:
             }
             
             url = f"{self.savant_base}/statcast_search/csv"
+            logger.info(f"Fetching Statcast data for game {game_id}, year {year}")
             response = requests.get(url, params=params, timeout=30)
             response.raise_for_status()
             
@@ -131,7 +141,10 @@ class BaseballSavantGIFIntegration:
             csv_reader = csv.DictReader(StringIO(response.text))
             plays_with_events = [row for row in csv_reader if row.get('events')]
             
+            logger.info(f"Found {len(plays_with_events)} Statcast plays for game {game_id}")
+            
             if not plays_with_events:
+                logger.warning(f"No Statcast data available for game {game_id} on {game_date}")
                 return None
             
             # If we have MLB play data, try to match it
@@ -145,20 +158,24 @@ class BaseballSavantGIFIntegration:
                     inning = play.get('inning')
                     
                     if (target_event in event or event in target_event) and str(inning) == str(target_inning):
+                        logger.info(f"Found exact Statcast match for {target_event} in inning {target_inning}")
                         return play
                 
                 # Fallback to event type match
                 for play in plays_with_events:
                     event = play.get('events', '').lower()
                     if target_event in event or event in target_event:
+                        logger.info(f"Found event match for {target_event}")
                         return play
             
             # Return the most interesting play
             for play in plays_with_events:
                 event = play.get('events', '').lower()
                 if any(keyword in event for keyword in ['home_run', 'double', 'triple', 'single']):
+                    logger.info(f"Found interesting Statcast play: {event}")
                     return play
             
+            logger.info(f"Returning first available Statcast play")
             return plays_with_events[0]
             
         except Exception as e:
@@ -295,3 +312,92 @@ class BaseballSavantGIFIntegration:
                     temp_video.unlink()
             except:
                 pass 
+    
+    def create_fallback_gif(self, game_id: int, play_id: int, mlb_play_data: Dict = None) -> Optional[str]:
+        """Create a simple fallback GIF when video data isn't available"""
+        try:
+            logger.info(f"Creating fallback GIF for play {play_id} in game {game_id}")
+            
+            # Get play details
+            if mlb_play_data:
+                event = mlb_play_data.get('result', {}).get('event', 'Unknown Play')
+                description = mlb_play_data.get('result', {}).get('description', '')
+                batter = mlb_play_data.get('matchup', {}).get('batter', {}).get('fullName', 'Unknown Batter')
+                inning = mlb_play_data.get('about', {}).get('inning', 0)
+                half = mlb_play_data.get('about', {}).get('halfInning', '')
+            else:
+                event = 'MLB Play'
+                description = f'Play from game {game_id}'
+                batter = 'Unknown Batter'
+                inning = 0
+                half = ''
+            
+            # Create a simple image with the play information
+            width, height = 400, 300
+            frames = []
+            
+            # Create 3 frames for a simple animation
+            for i in range(3):
+                img = Image.new('RGB', (width, height), color='#1a472a')  # Baseball green
+                draw = ImageDraw.Draw(img)
+                
+                try:
+                    # Try to load a default font
+                    font_large = ImageFont.truetype("/System/Library/Fonts/Arial.ttf", 24)
+                    font_small = ImageFont.truetype("/System/Library/Fonts/Arial.ttf", 16)
+                except:
+                    # Fallback to default font
+                    font_large = ImageFont.load_default()
+                    font_small = ImageFont.load_default()
+                
+                # Draw title
+                title = "MLB GIF Dashboard"
+                draw.text((width//2, 30), title, fill='white', font=font_large, anchor='mt')
+                
+                # Draw play information
+                y_pos = 80
+                lines = [
+                    f"Event: {event}",
+                    f"Batter: {batter}",
+                    f"Inning: {half} {inning}" if inning else "Inning: Unknown",
+                    f"Game: {game_id}",
+                    "",
+                    "Video data not available",
+                    "for this play"
+                ]
+                
+                for line in lines:
+                    if line:
+                        draw.text((width//2, y_pos), line, fill='white', font=font_small, anchor='mt')
+                    y_pos += 25
+                
+                # Add a simple animation effect
+                if i == 1:
+                    draw.ellipse([width//2-10, height-60, width//2+10, height-40], fill='white')
+                elif i == 2:
+                    draw.ellipse([width//2-15, height-65, width//2+15, height-35], fill='yellow')
+                
+                frames.append(img)
+            
+            # Save as GIF
+            output_filename = f"fallback_{game_id}_{play_id}_{int(time.time())}.gif"
+            output_path = self.temp_dir / output_filename
+            
+            frames[0].save(
+                str(output_path),
+                save_all=True,
+                append_images=frames[1:],
+                duration=1000,  # 1 second per frame
+                loop=0
+            )
+            
+            if output_path.exists():
+                logger.info(f"Successfully created fallback GIF: {output_path}")
+                return str(output_path)
+            else:
+                logger.error(f"Failed to create fallback GIF")
+                return None
+                
+        except Exception as e:
+            logger.error(f"Error creating fallback GIF: {e}")
+            return None 

@@ -552,32 +552,42 @@ def api_games():
     scheduled_count = 0
     live_count = 0
     final_count = 0
+    warmup_count = 0
     
     for game in dashboard.games.values():
         game_dict = game.to_dict()
         # Sort plays by timestamp (newest first)
         game_dict['plays'].sort(key=lambda x: x['timestamp'], reverse=True)
         
-        # Categorize games for sorting
+        # Categorize games for sorting with more granular categories
         game_state = game_dict['game_state'].lower()
-        if 'scheduled' in game_state or 'warmup' in game_state:
-            game_dict['category'] = 'scheduled'
-            scheduled_count += 1
-        elif 'live' in game_state or 'progress' in game_state:
+        status_code = game_dict.get('status_code', 'unknown')
+        
+        if 'live' in game_state or 'progress' in game_state or 'in progress' in game_state:
             game_dict['category'] = 'live'
+            game_dict['sort_priority'] = 1
             live_count += 1
-        elif 'final' in game_state or 'completed' in game_state:
+        elif 'warmup' in game_state or 'warm' in game_state or 'pre-game' in game_state or 'pregame' in game_state:
+            game_dict['category'] = 'warmup'
+            game_dict['sort_priority'] = 2
+            warmup_count += 1
+        elif 'scheduled' in game_state or status_code == 'S':
+            game_dict['category'] = 'scheduled'
+            game_dict['sort_priority'] = 3
+            scheduled_count += 1
+        elif 'final' in game_state or 'completed' in game_state or 'over' in game_state:
             game_dict['category'] = 'final'
+            game_dict['sort_priority'] = 4
             final_count += 1
         else:
             game_dict['category'] = 'other'
+            game_dict['sort_priority'] = 5
         
         games_data.append(game_dict)
     
-    # Sort games: scheduled first, then live, then final
+    # Sort games: live first, then warmup, then scheduled, then final
     def sort_key(game):
-        category_order = {'scheduled': 0, 'live': 1, 'final': 2, 'other': 3}
-        return (category_order.get(game['category'], 4), game['game_time'])
+        return (game['sort_priority'], game['game_time'])
     
     games_data.sort(key=sort_key)
     
@@ -586,8 +596,9 @@ def api_games():
         'last_update': dashboard.last_update.isoformat() if dashboard.last_update else None,
         'monitoring': dashboard.monitoring,
         'summary': {
-            'scheduled': scheduled_count,
             'live': live_count,
+            'warmup': warmup_count,
+            'scheduled': scheduled_count,
             'final': final_count,
             'total': len(games_data)
         }

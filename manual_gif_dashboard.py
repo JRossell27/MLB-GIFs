@@ -199,26 +199,66 @@ class ManualGIFDashboard:
     def get_game_plays(self, game_id: int) -> List[Dict]:
         """Get all plays for a specific game"""
         try:
-            url = f"{self.api_base}/game/{game_id}/playByPlay"
-            logger.info(f"Fetching plays for game {game_id} from: {url}")
+            # Try multiple possible endpoints for 2025
+            endpoints_to_try = [
+                f"https://statsapi.mlb.com/api/v1/game/{game_id}/playByPlay",  # Original endpoint
+                f"https://statsapi.mlb.com/api/v1.1/game/{game_id}/playByPlay",  # Current logs endpoint
+                f"https://statsapi.mlb.com/api/v2/game/{game_id}/playByPlay",  # Try v2
+                f"https://statsapi.mlb.com/api/v1/game/{game_id}/feed/live",  # Live feed endpoint
+            ]
             
-            response = requests.get(url, timeout=15)
-            response.raise_for_status()
+            for endpoint in endpoints_to_try:
+                logger.info(f"Trying endpoint: {endpoint}")
+                try:
+                    response = requests.get(endpoint, timeout=15)
+                    logger.info(f"Response status: {response.status_code}")
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        logger.info(f"Success! Found data with keys: {list(data.keys())}")
+                        
+                        # Try to extract plays from different possible structures
+                        plays = []
+                        if 'allPlays' in data:
+                            plays = data.get('allPlays', [])
+                            logger.info(f"Found {len(plays)} plays in 'allPlays'")
+                        elif 'liveData' in data and 'plays' in data['liveData']:
+                            plays = data['liveData']['plays'].get('allPlays', [])
+                            logger.info(f"Found {len(plays)} plays in 'liveData.plays.allPlays'")
+                        elif 'plays' in data:
+                            plays = data['plays'].get('allPlays', [])
+                            logger.info(f"Found {len(plays)} plays in 'plays.allPlays'")
+                        else:
+                            logger.info(f"No plays found. Available keys: {list(data.keys())}")
+                            # Log a sample of the data structure
+                            if data:
+                                sample_data = str(data)[:500]
+                                logger.info(f"Sample data structure: {sample_data}...")
+                            continue
+                        
+                        if plays:
+                            logger.info(f"Successfully found {len(plays)} plays using endpoint: {endpoint}")
+                            if len(plays) > 0:
+                                logger.info(f"Sample play keys: {list(plays[0].keys()) if plays else 'None'}")
+                            return plays
+                        
+                    elif response.status_code == 404:
+                        logger.info(f"404 Not Found for endpoint: {endpoint}")
+                        continue
+                    else:
+                        logger.warning(f"Unexpected status {response.status_code} for endpoint: {endpoint}")
+                        continue
+                        
+                except requests.exceptions.RequestException as e:
+                    logger.warning(f"Request failed for endpoint {endpoint}: {str(e)}")
+                    continue
             
-            data = response.json()
-            plays = data.get('allPlays', [])
-            
-            logger.info(f"Found {len(plays)} plays for game {game_id}")
-            if len(plays) > 0:
-                logger.info(f"Sample play keys: {list(plays[0].keys()) if plays else 'None'}")
-                logger.info(f"Sample play data: {str(plays[0])[:300]}..." if plays else 'None')
-            else:
-                logger.warning(f"No plays found for game {game_id}. Raw response: {str(data)[:500]}...")
-            
-            return plays
+            # If we get here, none of the endpoints worked
+            logger.error(f"All play-by-play endpoints failed for game {game_id}")
+            return []
             
         except Exception as e:
-            logger.error(f"Error fetching plays for game {game_id}: {e}")
+            logger.error(f"Error in get_game_plays for game {game_id}: {str(e)}")
             return []
     
     def calculate_impact_score(self, play: Dict) -> float:

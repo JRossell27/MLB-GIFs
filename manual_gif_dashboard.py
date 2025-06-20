@@ -154,6 +154,15 @@ class ManualGIFDashboard:
         eastern = pytz.timezone('US/Eastern')
         today = datetime.now(eastern).strftime('%Y-%m-%d')
         
+        # For debugging - you can uncomment this line to test with a known date that has games
+        # today = '2024-07-15'  # Use a date from 2024 MLB season for testing
+        
+        # Check if we should use a test date from environment variable
+        test_date = os.environ.get('TEST_DATE')
+        if test_date:
+            today = test_date
+            logger.info(f"Using test date from environment: {today}")
+        
         try:
             url = f"{self.schedule_api_base}/schedule"
             params = {
@@ -162,15 +171,23 @@ class ManualGIFDashboard:
                 'hydrate': 'game(content(editorial(recap))),linescore,team,probablePitcher'
             }
             
+            logger.info(f"Fetching games for date: {today}")
+            logger.info(f"API URL: {url}")
+            logger.info(f"API params: {params}")
+            
             response = requests.get(url, params=params, timeout=15)
             response.raise_for_status()
             
             data = response.json()
+            logger.info(f"API Response status: {response.status_code}")
+            logger.info(f"Raw API response sample: {str(data)[:500]}...")
+            
             games = []
             
             for date_entry in data.get('dates', []):
                 for game in date_entry.get('games', []):
                     games.append(game)
+                    logger.info(f"Found game: {game.get('teams', {}).get('away', {}).get('team', {}).get('abbreviation', 'Unknown')} @ {game.get('teams', {}).get('home', {}).get('team', {}).get('abbreviation', 'Unknown')} - Status: {game.get('status', {}).get('detailedState', 'Unknown')}")
             
             logger.info(f"Found {len(games)} games for {today}")
             return games
@@ -183,14 +200,20 @@ class ManualGIFDashboard:
         """Get all plays for a specific game"""
         try:
             url = f"{self.api_base}/game/{game_id}/playByPlay"
+            logger.info(f"Fetching plays for game {game_id} from: {url}")
+            
             response = requests.get(url, timeout=15)
             response.raise_for_status()
             
             data = response.json()
-            plays = []
+            plays = data.get('allPlays', [])
             
-            for inning in data.get('allPlays', []):
-                plays.append(inning)
+            logger.info(f"Found {len(plays)} plays for game {game_id}")
+            if len(plays) > 0:
+                logger.info(f"Sample play keys: {list(plays[0].keys()) if plays else 'None'}")
+                logger.info(f"Sample play data: {str(plays[0])[:300]}..." if plays else 'None')
+            else:
+                logger.warning(f"No plays found for game {game_id}. Raw response: {str(data)[:500]}...")
             
             return plays
             
@@ -245,9 +268,13 @@ class ManualGIFDashboard:
             try:
                 game_id = game_data['gamePk']
                 status_code = game_data.get('status', {}).get('statusCode')
+                detailed_state = game_data.get('status', {}).get('detailedState', '')
+                
+                logger.info(f"Processing game {game_id}: {status_code} - {detailed_state}")
                 
                 # Handle scheduled games (haven't started yet)
                 if status_code == 'S':
+                    logger.info(f"Game {game_id} is scheduled, skipping play fetch")
                     # Create or update scheduled game info (no plays yet)
                     if game_id not in self.games:
                         game_info = self._create_game_info(game_data, [])
@@ -261,15 +288,21 @@ class ManualGIFDashboard:
                     continue
                 
                 # Handle live/completed games (get plays)
+                logger.info(f"Game {game_id} is live/completed, fetching plays...")
                 plays_data = self.get_game_plays(game_id)
+                logger.info(f"Retrieved {len(plays_data)} raw plays for game {game_id}")
                 
                 # Process plays
                 plays = []
+                processed_count = 0
+                skipped_count = 0
+                
                 for play_data in plays_data:
                     play_id = f"{game_id}_{play_data.get('atBatIndex', 0)}"
                     
                     # Skip if already processed
                     if play_id in self.processed_plays:
+                        skipped_count += 1
                         continue
                     
                     # Create GamePlay object
@@ -277,11 +310,15 @@ class ManualGIFDashboard:
                     if play:
                         plays.append(play)
                         self.processed_plays.add(play_id)
+                        processed_count += 1
+                
+                logger.info(f"Game {game_id}: processed {processed_count} new plays, skipped {skipped_count} existing plays")
                 
                 # Update or create game info
                 if game_id in self.games:
                     # Update existing game
                     game_info = self.games[game_id]
+                    old_play_count = len(game_info.plays)
                     game_info.plays.extend(plays)
                     # Keep only recent plays to save memory
                     game_info.plays = game_info.plays[-self.max_plays_per_game:]
@@ -293,19 +330,24 @@ class ManualGIFDashboard:
                     game_info.inning = linescore.get('currentInning', 0)
                     game_info.inning_state = linescore.get('inningState', '')
                     game_info.game_state = game_data.get('status', {}).get('detailedState', '')
+                    logger.info(f"Updated game {game_id}: {old_play_count} -> {len(game_info.plays)} total plays")
                 else:
                     # Create new game
                     game_info = self._create_game_info(game_data, plays)
                     self.games[game_id] = game_info
+                    logger.info(f"Created new game {game_id} with {len(plays)} plays")
                 
                 # Memory management - keep only max games
                 if len(self.games) > self.max_games:
                     oldest_game_id = min(self.games.keys(), 
                                        key=lambda x: self.games[x].last_updated)
                     del self.games[oldest_game_id]
+                    logger.info(f"Removed oldest game {oldest_game_id} due to memory limit")
                 
             except Exception as e:
                 logger.error(f"Error updating game {game_data.get('gamePk')}: {e}")
+                
+        logger.info(f"Update complete. Total games in memory: {len(self.games)}, Total plays: {sum(len(game.plays) for game in self.games.values())}")
     
     def _create_game_play(self, play_data: Dict, game_data: Dict) -> Optional[GamePlay]:
         """Create a GamePlay object from MLB API data"""

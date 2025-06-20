@@ -621,6 +621,131 @@
             transform: translateY(-1px);
             box-shadow: 0 3px 8px rgba(111, 66, 193, 0.4);
         }
+
+        .game-teams {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .team-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .team-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .game-status {
+            font-size: 0.8em;
+            opacity: 0.7;
+        }
+
+        .game-score-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .score-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .score {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #ff6b35;
+        }
+
+        .inning {
+            font-size: 0.8em;
+            opacity: 0.7;
+        }
+
+        .venue-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .venue {
+            font-size: 0.8em;
+            opacity: 0.8;
+        }
+
+        .start-time {
+            font-size: 0.7em;
+            opacity: 0.6;
+        }
+
+        .plays-summary {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .plays-count {
+            font-size: 0.8em;
+            opacity: 0.7;
+        }
+
+        .plays-number {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #ff6b35;
+        }
+
+        .toggle-icon {
+            font-size: 1.2em;
+            transition: transform 0.3s ease;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .create-gif-btn {
+            padding: 8px 16px;
+            font-size: 0.9em;
+            background: linear-gradient(45deg, #ff6b35, #f7931e);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .create-gif-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
+        }
+
+        .create-gif-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .no-plays {
+            text-align: center;
+            padding: 20px;
+            opacity: 0.7;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -662,6 +787,7 @@
         let currentFilter = 'all';
         let currentSearch = '';
         let allGamesExpanded = false;
+        let expandedGames = new Set();
 
         // Initialize event listeners
         document.addEventListener('DOMContentLoaded', function() {
@@ -697,9 +823,9 @@
                 // Apply search filter
                 if (currentSearch) {
                     const searchTerms = [
-                        play.batter_name || '',
-                        play.pitcher_name || '',
-                        play.event_type || '',
+                        play.batter || '',           // Use 'batter' not 'batter_name'
+                        play.pitcher || '',          // Use 'pitcher' not 'pitcher_name'
+                        play.event || '',            // Use 'event' not 'event_type'
                         play.description || ''
                     ].join(' ').toLowerCase();
                     
@@ -724,7 +850,7 @@
                         return true;
                     
                     case 'hits':
-                        const event = (play.event_type || '').toLowerCase();
+                        const event = (play.event || '').toLowerCase();
                         return event.includes('single') || event.includes('double') || 
                                event.includes('triple') || event.includes('home_run') ||
                                event.includes('home run');
@@ -749,17 +875,32 @@
         }
 
         function toggleGame(gameId) {
-            const gameCard = document.querySelector(`[data-game-id="${gameId}"]`);
-            if (gameCard) {
-                gameCard.classList.toggle('collapsed');
+            if (expandedGames.has(gameId)) {
+                expandedGames.delete(gameId);
+            } else {
+                expandedGames.add(gameId);
+            }
+            loadGames(); // Refresh display
+        }
+
+        function formatGameTime(gameTime) {
+            try {
+                const date = new Date(gameTime);
+                return date.toLocaleTimeString('en-US', { 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    timeZoneName: 'short'
+                });
+            } catch (e) {
+                return 'TBD';
             }
         }
 
-        function toggleInning(gameId, inningKey) {
-            const inningSection = document.querySelector(`[data-game-id="${gameId}"] [data-inning="${inningKey}"]`);
-            if (inningSection) {
-                inningSection.classList.toggle('expanded');
-            }
+        function toggleExpandAll() {
+            allGamesExpanded = !allGamesExpanded;
+            const button = document.querySelector('.expand-all-btn');
+            button.textContent = allGamesExpanded ? 'Collapse All Games' : 'Expand All Games';
+            loadGames();
         }
 
         async function loadGames() {
@@ -777,36 +918,19 @@
                     return;
                 }
 
-                const filteredGames = gamesData.games.map(game => {
+                // Process games without breaking the data structure
+                const processedGames = gamesData.games.map(game => {
+                    // Apply filters to plays
                     const filteredPlays = filterPlays(game.plays);
-                    const groupedPlays = groupPlaysByInning(filteredPlays);
+                    
+                    // Return game with filtered plays
                     return {
                         ...game,
-                        plays: groupedPlays
+                        plays: filteredPlays
                     };
                 });
 
-                const groupedGames = {};
-                filteredGames.forEach(game => {
-                    const gameId = game.game_id;
-                    if (!groupedGames[gameId]) {
-                        groupedGames[gameId] = {
-                            ...game,
-                            plays: []
-                        };
-                    }
-                    groupedGames[gameId].plays = groupedGames[gameId].plays.concat(game.plays);
-                });
-
-                const games = Object.values(groupedGames);
-
-                if (allGamesExpanded) {
-                    games.forEach(game => {
-                        game.plays = game.plays.flat();
-                    });
-                }
-
-                updateGamesDisplay(games);
+                updateGamesDisplay(processedGames);
             } catch (error) {
                 console.error('Error loading games:', error);
                 showToast('Failed to load games', 'error');
@@ -816,129 +940,76 @@
         function updateGamesDisplay(games) {
             const container = document.getElementById('games-container');
             
-            if (!games || games.length === 0) {
+            if (games.length === 0) {
                 container.innerHTML = `
                     <div class="no-games">
-                        <h3>📅 No Games Today</h3>
-                        <p>No MLB games found for today or games haven't started yet.</p>
+                        <h3>📅 No Games Found</h3>
+                        <p>No games match your current filters.</p>
                     </div>
                 `;
                 return;
             }
 
-            // Sort games by priority: Live → Warmup → Scheduled → Final
-            const sortedGames = games.sort((a, b) => {
-                const priority = {
-                    'Live': 1, 'I': 1, 'M': 1, 'O': 1,
-                    'Warmup': 2, 'W': 2, 'P': 2,
-                    'Scheduled': 3, 'S': 3, 'PR': 3,
-                    'Final': 4, 'F': 4, 'C': 4, 'D': 4
-                };
-                return (priority[a.status] || 5) - (priority[b.status] || 5);
-            });
-
             let html = '';
-            let liveCt = 0, warmupCt = 0, scheduledCt = 0, finalCt = 0;
-
-            sortedGames.forEach(game => {
-                // Count games by status
-                const status = game.status || '';
-                if (['Live', 'I', 'M', 'O'].includes(status)) liveCt++;
-                else if (['Warmup', 'W', 'P'].includes(status)) warmupCt++;
-                else if (['Scheduled', 'S', 'PR'].includes(status)) scheduledCt++;
-                else if (['Final', 'F', 'C', 'D'].includes(status)) finalCt++;
-
-                const statusClass = getStatusClass(status);
-                const statusDisplay = getStatusDisplay(status);
-                const isCollapsed = !allGamesExpanded;
+            
+            games.forEach(game => {
+                const isExpanded = allGamesExpanded || expandedGames.has(game.game_id);
+                const playCount = game.plays.length;
                 
-                // Get all plays for this game (flatten if grouped by innings)
-                let allPlays = [];
-                if (Array.isArray(game.plays)) {
-                    allPlays = game.plays;
-                } else if (typeof game.plays === 'object') {
-                    Object.values(game.plays).forEach(inningPlays => {
-                        if (Array.isArray(inningPlays)) {
-                            allPlays = allPlays.concat(inningPlays);
-                        }
-                    });
+                // Determine game status color
+                let statusColor = 'gray';  // default/scheduled
+                const gameState = (game.game_state || '').toLowerCase();
+                if (gameState.includes('live') || gameState.includes('progress')) {
+                    statusColor = 'green';
+                } else if (gameState.includes('warmup') || gameState.includes('pre-game')) {
+                    statusColor = 'yellow';
+                } else if (gameState.includes('final') || gameState.includes('completed')) {
+                    statusColor = 'purple';
                 }
-
+                
                 html += `
-                    <div class="game-card ${statusClass} ${isCollapsed ? 'collapsed' : ''}" data-game-id="${game.game_id}">
-                        <div class="game-header" onclick="toggleGame('${game.game_id}')">
-                            <h3>${game.away_team} @ ${game.home_team}</h3>
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <span class="game-status ${statusClass}">${statusDisplay}</span>
-                                <span class="collapse-indicator">▼</span>
+                    <div class="game-card" style="border-left: 4px solid ${statusColor};">
+                        <div class="game-header" onclick="toggleGame(${game.game_id})">
+                            <div class="game-teams">
+                                <div class="team-info">
+                                    <span class="team-name">${game.away_team} @ ${game.home_team}</span>
+                                    <span class="game-status">${game.game_state || 'Unknown'}</span>
+                                </div>
+                                <div class="game-score-section">
+                                    <div class="score-display">
+                                        <span class="score">${game.away_score || 0} - ${game.home_score || 0}</span>
+                                        <span class="inning">Inning ${game.inning || 'N/A'}</span>
+                                    </div>
+                                    <div class="venue-info">
+                                        <span class="venue">${game.venue || 'Unknown Venue'}</span>
+                                        <span class="start-time">${game.game_time ? formatGameTime(game.game_time) : 'TBD'}</span>
+                                    </div>
+                                </div>
+                                <div class="plays-summary">
+                                    <span class="plays-count">Plays</span>
+                                    <span class="plays-number">${playCount}</span>
+                                    <span class="toggle-icon">${isExpanded ? '▼' : '📅'}</span>
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="game-content">
-                            <div class="game-info">
-                                <div class="info-item">
-                                    <div class="info-label">Score</div>
-                                    <div class="info-value">${game.away_score || 0} - ${game.home_score || 0}</div>
-                                </div>
-                                <div class="info-item">
-                                    <div class="info-label">Inning</div>
-                                    <div class="info-value">${game.inning || 'N/A'}</div>
-                                </div>
-                                <div class="info-item">
-                                    <div class="info-label">Venue</div>
-                                    <div class="info-value">${game.venue || 'TBD'}</div>
-                                </div>
-                                <div class="info-item">
-                                    <div class="info-label">Start Time</div>
-                                    <div class="info-value">${game.start_time || 'TBD'}</div>
-                                </div>
-                            </div>
-
-                            <div class="plays-section">
-                                <div class="plays-header">
-                                    <span class="plays-title">Plays</span>
-                                    <span class="plays-count">${allPlays.length}</span>
-                                </div>
+                        <div class="game-content" style="display: ${isExpanded ? 'block' : 'none'};">
+                            <div class="plays-list">
                 `;
-
-                if (allPlays.length === 0) {
-                    html += '<p style="text-align: center; padding: 20px; opacity: 0.7;">No plays available yet</p>';
-                } else {
-                    // Group plays by inning if not already grouped
-                    let playsByInning;
-                    if (typeof game.plays === 'object' && !Array.isArray(game.plays)) {
-                        playsByInning = game.plays;
-                    } else {
-                        playsByInning = groupPlaysByInning(allPlays);
-                    }
-
-                    // Create inning sections
-                    Object.keys(playsByInning).sort().forEach(inningKey => {
-                        const inningPlays = playsByInning[inningKey];
-                        if (!inningPlays || inningPlays.length === 0) return;
-
-                        html += `
-                            <div class="inning-section" data-inning="${inningKey}">
-                                <div class="inning-header" onclick="toggleInning('${game.game_id}', '${inningKey}')">
-                                    <span class="inning-title">Inning ${inningKey}</span>
-                                    <span class="inning-count">${inningPlays.length}</span>
-                                </div>
-                                <div class="inning-plays">
-                                    <div class="plays-grid">
-                        `;
-
-                        inningPlays.forEach(play => {
-                            html += createPlayItem(play);
-                        });
-
-                        html += `
-                                    </div>
-                                </div>
-                            </div>
-                        `;
+                
+                // Display plays directly (no complex grouping)
+                if (game.plays && game.plays.length > 0) {
+                    game.plays.forEach(play => {
+                        html += renderPlayItem(play, game.game_id);
                     });
+                } else {
+                    html += `
+                        <div class="no-plays">
+                            <p>No plays available for this game yet.</p>
+                        </div>
+                    `;
                 }
-
+                
                 html += `
                             </div>
                         </div>
@@ -947,54 +1018,59 @@
             });
 
             container.innerHTML = html;
-
-            // Update status bar
-            document.getElementById('status').innerHTML = `
-                <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-                    <span style="background: #28a745; padding: 4px 8px; border-radius: 12px; font-size: 0.8em;">🟢 Live: ${liveCt}</span>
-                    <span style="background: #ffc107; color: black; padding: 4px 8px; border-radius: 12px; font-size: 0.8em;">🟡 Warmup: ${warmupCt}</span>
-                    <span style="background: #6c757d; padding: 4px 8px; border-radius: 12px; font-size: 0.8em;">📅 Scheduled: ${scheduledCt}</span>
-                    <span style="background: #6f42c1; padding: 4px 8px; border-radius: 12px; font-size: 0.8em;">⚫ Final: ${finalCt}</span>
-                </div>
-            `;
         }
 
-        function createPlayItem(play) {
-            const impactClass = (play.wpa && Math.abs(play.wpa) > 0.1) || (play.impact_score && play.impact_score > 0.5) ? 'high-impact' : '';
+        function renderPlayItem(play, gameId) {
+            const impactClass = play.impact_score > 0.5 ? 'high-impact' : '';
             const gifClass = play.gif_created ? 'gif-created' : (play.gif_processing ? 'gif-processing' : '');
+            
+            // Format inning display properly
+            const inning = play.inning || 'Unknown';
+            const halfInning = play.half_inning || '';
+            const inningDisplay = halfInning ? `${inning}${halfInning.charAt(0).toUpperCase()}` : `${inning}`;
             
             return `
                 <div class="play-item ${impactClass} ${gifClass}">
                     <div class="play-header">
-                        <span class="play-event">${play.event_type || 'Unknown Event'}</span>
+                        <span class="play-event">${play.event || 'Unknown Event'}</span>
                         <span class="play-impact">WPA: ${play.wpa ? play.wpa.toFixed(3) : 'N/A'}</span>
                     </div>
-                    
+                    <div class="play-description">${play.description || 'No description available'}</div>
                     <div class="play-details">
-                        <div class="detail-item">
-                            <div class="detail-label">Batter</div>
-                            <div class="detail-value">${play.batter_name || 'Unknown'}</div>
+                        <div class="details-grid">
+                            <div class="detail-item">
+                                <div class="detail-label">Inning</div>
+                                <div class="detail-value">${inningDisplay}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Outs</div>
+                                <div class="detail-value">${play.outs || 0}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Batter</div>
+                                <div class="detail-value">${play.batter || 'Unknown'}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Pitcher</div>
+                                <div class="detail-value">${play.pitcher || 'Unknown'}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Impact</div>
+                                <div class="detail-value">${play.impact_score ? play.impact_score.toFixed(2) : 'N/A'}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Score</div>
+                                <div class="detail-value">${play.away_score || 0} - ${play.home_score || 0}</div>
+                            </div>
                         </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Pitcher</div>
-                            <div class="detail-value">${play.pitcher_name || 'Unknown'}</div>
+                        <div class="play-actions">
+                            <button class="create-gif-btn" 
+                                    onclick="createGif('${play.play_id}')"
+                                    ${play.gif_created || play.gif_processing ? 'disabled' : ''}>
+                                ${play.gif_processing ? '⏳ Processing...' : 
+                                  play.gif_created ? '✅ GIF Created' : '🎬 Create GIF'}
+                            </button>
                         </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Inning</div>
-                            <div class="detail-value">${play.inning || 'N/A'}${play.half_inning === 'bottom' ? 'B' : 'T'}</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Impact</div>
-                            <div class="detail-value">${play.impact_score ? play.impact_score.toFixed(2) : 'N/A'}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="play-description">
-                        ${play.description || 'No description available'}
-                    </div>
-                    
-                    <div class="play-actions">
-                        ${createGifButton(play)}
                     </div>
                 </div>
             `;
@@ -1028,27 +1104,8 @@
             return statusMap[status] || `📅 ${status}`;
         }
 
-        function createGifButton(play) {
-            if (play.gif_created) {
-                return '<button class="btn-gif" disabled>✅ Video GIF Sent</button>';
-            } else if (play.gif_processing) {
-                return '<button class="btn-gif" disabled><span class="loading"></span> Creating Video...</button>';
-            } else {
-                return `<button class="btn-gif" onclick="createGif('${play.play_id}', event)">🎬 Create Video GIF</button>`;
-            }
-        }
-
-        async function createGif(playId, event) {
-            event.stopPropagation();
-
+        async function createGif(playId) {
             try {
-                const button = event.target;
-                const originalText = button.innerHTML;
-                
-                // Update button to show loading
-                button.innerHTML = '<span class="loading"></span> Creating Video GIF...';
-                button.disabled = true;
-
                 const response = await fetch('/api/create_gif', {
                     method: 'POST',
                     headers: {
@@ -1060,15 +1117,11 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    button.innerHTML = '✅ Video GIF Sent';
                     showToast('🎬 Video GIF created and sent to Discord!', 'success');
                     
                     // Refresh data to update play status
                     setTimeout(loadGames, 1000);
                 } else {
-                    button.innerHTML = originalText;
-                    button.disabled = false;
-                    
                     // Show specific error message
                     if (result.error.includes('No video data available')) {
                         showToast('⚠️ No video footage available for this play. Only plays with MLB video can be converted to GIFs.', 'warning');
@@ -1082,10 +1135,6 @@
             } catch (error) {
                 console.error('Error creating GIF:', error);
                 showToast('❌ Failed to create video GIF', 'error');
-                
-                // Reset button
-                event.target.innerHTML = '🎬 Create Video GIF';
-                event.target.disabled = false;
             }
         }
 

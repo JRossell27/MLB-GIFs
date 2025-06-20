@@ -709,6 +709,80 @@ def api_highlights(game_id):
             'count': 0
         }), 500
 
+@app.route('/api/create_highlight_gif', methods=['POST'])
+def api_create_highlight_gif():
+    """Create a GIF directly from a specific highlight"""
+    data = request.get_json()
+    game_id = data.get('game_id')
+    highlight_index = data.get('highlight_index')
+    
+    if not game_id or highlight_index is None:
+        return jsonify({"success": False, "error": "game_id and highlight_index required"}), 400
+    
+    try:
+        # Get the specific highlight
+        highlights = dashboard.gif_integration.get_game_highlights(game_id)
+        if highlight_index >= len(highlights):
+            return jsonify({"success": False, "error": "Invalid highlight index"}), 400
+        
+        highlight = highlights[highlight_index]
+        logger.info(f"Creating GIF from highlight: {highlight.get('title', 'Unknown')}")
+        
+        # Get the best video URL from the highlight
+        video_url = dashboard.gif_integration.get_best_video_url(highlight)
+        if not video_url:
+            return jsonify({"success": False, "error": "No video URL found in highlight"}), 400
+        
+        # Create GIF filename
+        highlight_title = highlight.get('title', 'highlight').replace(' ', '_').replace('/', '_')
+        gif_filename = f"mlb_highlight_{game_id}_{highlight_index}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.gif"
+        gif_path = dashboard.gif_integration.temp_dir / gif_filename
+        
+        # Download and convert to GIF
+        success = dashboard.gif_integration.download_and_convert_to_gif(video_url, str(gif_path))
+        
+        if success and gif_path.exists():
+            logger.info(f"Successfully created highlight GIF: {gif_path}")
+            
+            # Prepare Discord data
+            discord_data = {
+                'event': 'MLB Highlight',
+                'description': highlight.get('title', 'MLB Highlight'),
+                'away_team': 'N/A',
+                'home_team': 'N/A',
+                'impact_score': 1.0,  # Highlights are always high impact
+                'inning': 'Various',
+                'half_inning': '',
+                'batter': 'Multiple Players',
+                'pitcher': 'Multiple Players',
+                'timestamp': datetime.now().isoformat(),
+                'highlight_title': highlight.get('title', 'Unknown Highlight')
+            }
+            
+            # Send to Discord
+            discord_success = discord_client.send_gif_notification(discord_data, str(gif_path))
+            
+            # Clean up GIF file immediately
+            try:
+                gif_path.unlink()
+                logger.info(f"Cleaned up highlight GIF file: {gif_path}")
+            except:
+                pass
+            
+            if discord_success:
+                logger.info(f"✅ Highlight GIF sent to Discord successfully")
+                return jsonify({"success": True, "message": "Highlight GIF created and sent to Discord"})
+            else:
+                logger.error(f"❌ Failed to send highlight GIF to Discord")
+                return jsonify({"success": False, "error": "Failed to send highlight GIF to Discord"})
+        else:
+            logger.error(f"❌ Failed to create highlight GIF")
+            return jsonify({"success": False, "error": "Failed to create highlight GIF"})
+            
+    except Exception as e:
+        logger.error(f"Error creating highlight GIF: {e}")
+        return jsonify({"success": False, "error": f"Error creating highlight GIF: {str(e)}"}), 500
+
 if __name__ == '__main__':
     # Handle graceful shutdown
     def signal_handler(sig, frame):

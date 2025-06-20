@@ -787,6 +787,13 @@
             padding: 8px 10px;
             margin-bottom: 6px;
             border-left: 3px solid #ffc107;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .highlight-content {
+            flex-grow: 1;
         }
 
         .highlight-title {
@@ -801,6 +808,41 @@
             opacity: 0.7;
             display: flex;
             justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .highlight-description {
+            font-size: 0.8em;
+            opacity: 0.8;
+            font-style: italic;
+            margin-top: 4px;
+        }
+
+        .highlight-actions {
+            margin-left: 15px;
+        }
+
+        .create-highlight-gif-btn {
+            background: linear-gradient(45deg, #ffc107, #ff6b35);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .create-highlight-gif-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(255, 193, 7, 0.4);
+        }
+
+        .create-highlight-gif-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
         }
 
         .no-highlights {
@@ -1080,17 +1122,23 @@
                         <div class="game-content" style="display: ${isExpanded ? 'block' : 'none'};">
                             <div class="highlights-section">
                                 <div class="highlights-header">
-                                    <span class="highlights-title">📺 Available Highlights</span>
+                                    <span class="highlights-title">📺 Available Highlights (Create GIFs Here)</span>
                                     <button class="load-highlights-btn" onclick="loadHighlights(${game.game_id})">
                                         Load Highlights
                                     </button>
                                 </div>
                                 <div id="highlights-${game.game_id}" class="highlights-list">
-                                    <div class="no-highlights">Click "Load Highlights" to see available video content</div>
+                                    <div class="no-highlights">Click "Load Highlights" to see available video content and create GIFs</div>
                                 </div>
                             </div>
                             
-                            <div class="plays-list">
+                            <!-- Keep plays section but hide it for now -->
+                            <div class="plays-section" style="display: none;">
+                                <div class="plays-header">
+                                    <span class="plays-title">Individual Plays (Coming Soon)</span>
+                                    <span class="plays-count" style="opacity: 0.5;">Feature in development</span>
+                                </div>
+                                <div class="plays-list">
                 `;
                 
                 // Display plays directly (no complex grouping)
@@ -1265,13 +1313,23 @@
                 
                 if (result.success && result.highlights.length > 0) {
                     let highlightsHtml = '';
-                    result.highlights.forEach(highlight => {
+                    result.highlights.forEach((highlight, index) => {
                         highlightsHtml += `
                             <div class="highlight-item">
-                                <div class="highlight-title">${highlight.title}</div>
-                                <div class="highlight-details">
-                                    <span>Duration: ${highlight.duration}</span>
-                                    <span>${highlight.has_video ? '✅ Video Available' : '❌ No Video'}</span>
+                                <div class="highlight-content">
+                                    <div class="highlight-title">${highlight.title}</div>
+                                    <div class="highlight-details">
+                                        <span>Duration: ${highlight.duration}</span>
+                                        <span>${highlight.has_video ? '✅ Video Available' : '❌ No Video'}</span>
+                                    </div>
+                                    ${highlight.description ? `<div class="highlight-description">${highlight.description}</div>` : ''}
+                                </div>
+                                <div class="highlight-actions">
+                                    <button class="create-highlight-gif-btn" 
+                                            onclick="createHighlightGif(${gameId}, ${index})"
+                                            ${!highlight.has_video ? 'disabled' : ''}>
+                                        ${highlight.has_video ? '🎬 Create GIF' : '❌ No Video'}
+                                    </button>
                                 </div>
                             </div>
                         `;
@@ -1279,7 +1337,7 @@
                     highlightsContainer.innerHTML = highlightsHtml;
                     
                     // Update button to show count
-                    button.textContent = `${result.count} Highlights Found`;
+                    button.textContent = `${result.count} Highlights Available`;
                     
                 } else {
                     highlightsContainer.innerHTML = '<div class="no-highlights">No highlights available for this game</div>';
@@ -1296,6 +1354,39 @@
             setTimeout(() => {
                 button.disabled = false;
             }, 2000);
+        }
+
+        async function createHighlightGif(gameId, highlightIndex) {
+            try {
+                const response = await fetch('/api/create_highlight_gif', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        game_id: gameId, 
+                        highlight_index: highlightIndex 
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast('🎬 Highlight GIF created and sent to Discord!', 'success');
+                    
+                    // Update button to show success
+                    const button = event.target;
+                    button.textContent = '✅ GIF Created';
+                    button.disabled = true;
+                    
+                } else {
+                    showToast(`❌ Failed to create highlight GIF: ${result.error}`, 'error');
+                }
+
+            } catch (error) {
+                console.error('Error creating highlight GIF:', error);
+                showToast('❌ Failed to create highlight GIF', 'error');
+            }
         }
     </script>
 </body>

@@ -417,6 +417,41 @@
                 grid-template-columns: repeat(2, 1fr);
             }
         }
+
+        .game-card.scheduled {
+            border-left: 4px solid #ffc107;
+            background: rgba(255, 193, 7, 0.1);
+        }
+
+        .game-card.live {
+            border-left: 4px solid #28a745;
+            background: rgba(40, 167, 69, 0.1);
+        }
+
+        .game-card.final {
+            border-left: 4px solid #6c757d;
+            background: rgba(108, 117, 125, 0.1);
+        }
+
+        .scheduled-info {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 193, 7, 0.1);
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+
+        .start-time {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #ffc107;
+            margin-bottom: 10px;
+        }
+
+        .scheduled-message {
+            opacity: 0.8;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -435,7 +470,13 @@
                 <span>Last Update: <strong id="lastUpdate">Never</strong></span>
             </div>
             <div class="status-item">
-                <span>Games: <strong id="gamesCount">0</strong></span>
+                <span>📅 Scheduled: <strong id="scheduledCount">0</strong></span>
+            </div>
+            <div class="status-item">
+                <span>🟢 Live: <strong id="liveCount">0</strong></span>
+            </div>
+            <div class="status-item">
+                <span>⚫ Final: <strong id="finalCount">0</strong></span>
             </div>
             <div class="status-item">
                 <span>Total Plays: <strong id="playsCount">0</strong></span>
@@ -497,7 +538,9 @@
             const monitoringStatus = document.getElementById('monitoringStatus');
             const monitoringText = document.getElementById('monitoringText');
             const lastUpdate = document.getElementById('lastUpdate');
-            const gamesCount = document.getElementById('gamesCount');
+            const scheduledCount = document.getElementById('scheduledCount');
+            const liveCount = document.getElementById('liveCount');
+            const finalCount = document.getElementById('finalCount');
             const playsCount = document.getElementById('playsCount');
 
             // Update monitoring status
@@ -515,8 +558,11 @@
                 lastUpdate.textContent = updateTime.toLocaleTimeString();
             }
 
-            // Update counts
-            gamesCount.textContent = status.total_games;
+            // Update counts from games summary
+            const summary = games.summary || {};
+            scheduledCount.textContent = summary.scheduled || 0;
+            liveCount.textContent = summary.live || 0;
+            finalCount.textContent = summary.final || 0;
             playsCount.textContent = status.total_plays;
         }
 
@@ -538,15 +584,40 @@
 
         function createGameCard(game) {
             const sortedPlays = game.plays.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            // Determine game status for styling
+            const isScheduled = game.game_state.toLowerCase().includes('scheduled') || game.game_state.toLowerCase().includes('warmup');
+            const isLive = game.game_state.toLowerCase().includes('live') || game.game_state.toLowerCase().includes('progress');
+            const isFinal = game.game_state.toLowerCase().includes('final') || game.game_state.toLowerCase().includes('completed');
+            
+            let gameClass = '';
+            if (isScheduled) gameClass = 'scheduled';
+            else if (isLive) gameClass = 'live';
+            else if (isFinal) gameClass = 'final';
+
+            // Format game time for scheduled games
+            let gameTimeDisplay = '';
+            if (isScheduled && game.game_time) {
+                try {
+                    const gameDate = new Date(game.game_time);
+                    gameTimeDisplay = gameDate.toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        timeZoneName: 'short'
+                    });
+                } catch (e) {
+                    gameTimeDisplay = 'TBD';
+                }
+            }
 
             return `
-                <div class="game-card">
+                <div class="game-card ${gameClass}">
                     <div class="game-header">
                         <div class="game-matchup">
                             ${game.away_team} @ ${game.home_team}
                         </div>
                         <div class="game-score">
-                            ${game.away_score} - ${game.home_score}
+                            ${isScheduled ? gameTimeDisplay : `${game.away_score} - ${game.home_score}`}
                         </div>
                     </div>
 
@@ -555,10 +626,12 @@
                             <div class="info-label">Status</div>
                             <div class="info-value">${game.game_state}</div>
                         </div>
+                        ${!isScheduled ? `
                         <div class="info-item">
                             <div class="info-label">Inning</div>
                             <div class="info-value">${game.inning} ${game.inning_state}</div>
                         </div>
+                        ` : ''}
                         <div class="info-item">
                             <div class="info-label">Venue</div>
                             <div class="info-value">${game.venue}</div>
@@ -569,6 +642,12 @@
                         </div>
                     </div>
 
+                    ${isScheduled ? `
+                    <div class="scheduled-info">
+                        <div class="start-time">🕒 ${gameTimeDisplay}</div>
+                        <div class="scheduled-message">Game hasn't started yet - check back when it begins!</div>
+                    </div>
+                    ` : `
                     <div class="plays-section">
                         <div class="plays-header">
                             <div class="plays-title">Recent Plays</div>
@@ -578,6 +657,7 @@
                             ${sortedPlays.map(play => createPlayItem(play)).join('')}
                         </div>
                     </div>
+                    `}
                 </div>
             `;
         }

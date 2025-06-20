@@ -238,18 +238,29 @@ class ManualGIFDashboard:
             return 0.1
     
     def update_games(self):
-        """Update all games with new plays"""
+        """Update all games with new plays and include scheduled games"""
         games_data = self.get_today_games()
         
         for game_data in games_data:
             try:
                 game_id = game_data['gamePk']
+                status_code = game_data.get('status', {}).get('statusCode')
                 
-                # Skip if game hasn't started
-                if game_data.get('status', {}).get('statusCode') == 'S':
+                # Handle scheduled games (haven't started yet)
+                if status_code == 'S':
+                    # Create or update scheduled game info (no plays yet)
+                    if game_id not in self.games:
+                        game_info = self._create_game_info(game_data, [])
+                        self.games[game_id] = game_info
+                    else:
+                        # Update existing scheduled game info
+                        game_info = self.games[game_id]
+                        game_info.last_updated = datetime.now()
+                        # Update game state in case it changed
+                        game_info.game_state = game_data.get('status', {}).get('detailedState', '')
                     continue
                 
-                # Get plays for this game
+                # Handle live/completed games (get plays)
                 plays_data = self.get_game_plays(game_id)
                 
                 # Process plays
@@ -275,6 +286,13 @@ class ManualGIFDashboard:
                     # Keep only recent plays to save memory
                     game_info.plays = game_info.plays[-self.max_plays_per_game:]
                     game_info.last_updated = datetime.now()
+                    # Update scores and game state
+                    linescore = game_data.get('linescore', {})
+                    game_info.home_score = linescore.get('teams', {}).get('home', {}).get('runs', 0)
+                    game_info.away_score = linescore.get('teams', {}).get('away', {}).get('runs', 0)
+                    game_info.inning = linescore.get('currentInning', 0)
+                    game_info.inning_state = linescore.get('inningState', '')
+                    game_info.game_state = game_data.get('status', {}).get('detailedState', '')
                 else:
                     # Create new game
                     game_info = self._create_game_info(game_data, plays)
@@ -449,19 +467,48 @@ def index():
 def api_games():
     """Get all games with their plays"""
     games_data = []
+    scheduled_count = 0
+    live_count = 0
+    final_count = 0
+    
     for game in dashboard.games.values():
         game_dict = game.to_dict()
         # Sort plays by timestamp (newest first)
         game_dict['plays'].sort(key=lambda x: x['timestamp'], reverse=True)
+        
+        # Categorize games for sorting
+        game_state = game_dict['game_state'].lower()
+        if 'scheduled' in game_state or 'warmup' in game_state:
+            game_dict['category'] = 'scheduled'
+            scheduled_count += 1
+        elif 'live' in game_state or 'progress' in game_state:
+            game_dict['category'] = 'live'
+            live_count += 1
+        elif 'final' in game_state or 'completed' in game_state:
+            game_dict['category'] = 'final'
+            final_count += 1
+        else:
+            game_dict['category'] = 'other'
+        
         games_data.append(game_dict)
     
-    # Sort games by last updated
-    games_data.sort(key=lambda x: x['last_updated'], reverse=True)
+    # Sort games: scheduled first, then live, then final
+    def sort_key(game):
+        category_order = {'scheduled': 0, 'live': 1, 'final': 2, 'other': 3}
+        return (category_order.get(game['category'], 4), game['game_time'])
+    
+    games_data.sort(key=sort_key)
     
     return jsonify({
         'games': games_data,
         'last_update': dashboard.last_update.isoformat() if dashboard.last_update else None,
-        'monitoring': dashboard.monitoring
+        'monitoring': dashboard.monitoring,
+        'summary': {
+            'scheduled': scheduled_count,
+            'live': live_count,
+            'final': final_count,
+            'total': len(games_data)
+        }
     })
 
 @app.route('/api/create_gif', methods=['POST'])

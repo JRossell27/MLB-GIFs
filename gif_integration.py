@@ -346,7 +346,7 @@ class MLBHighlightGIFIntegration:
                     '-referer', 'https://www.mlb.com/',
                     '-headers', 'Accept: video/mp4,video/*;q=0.9,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nConnection: keep-alive\r\n',
                     '-i', video_url,
-                    '-vf', 'fps=15,scale=480:-1:flags=lanczos',
+                    '-vf', 'fps=20,scale=640:-1:flags=lanczos',  # Higher quality: 640px width, 20fps
                     '-loop', '0',
                     '-y',
                     output_path
@@ -438,7 +438,7 @@ class MLBHighlightGIFIntegration:
                 gif_cmd = [
                     'ffmpeg',
                     '-i', str(temp_video),
-                    '-vf', 'fps=15,scale=480:-1:flags=lanczos',
+                    '-vf', 'fps=20,scale=640:-1:flags=lanczos',  # Higher quality: 640px width, 20fps
                     '-loop', '0',
                     '-y',
                     output_path
@@ -481,7 +481,7 @@ class MLBHighlightGIFIntegration:
                     'ffmpeg',
                     '-i', input_source,
                     '-t', '10',  # 10 second fallback
-                    '-vf', 'fps=12,scale=400:-1:flags=lanczos',  # Smaller fallback
+                    '-vf', 'fps=18,scale=560:-1:flags=lanczos',  # Better fallback quality
                     '-loop', '0',
                     '-y',
                     output_path
@@ -496,7 +496,7 @@ class MLBHighlightGIFIntegration:
                         '-headers', 'Accept: video/mp4,video/*;q=0.9,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nConnection: keep-alive\r\n',
                         '-i', input_source,
                         '-t', '10',
-                        '-vf', 'fps=12,scale=400:-1:flags=lanczos',
+                        '-vf', 'fps=18,scale=560:-1:flags=lanczos',
                         '-loop', '0',
                         '-y',
                         output_path
@@ -584,6 +584,193 @@ class MLBHighlightGIFIntegration:
                     logger.debug(f"Cleaned up temp file: {file_path}")
         except Exception as e:
             logger.error(f"Error cleaning up temp files: {e}")
+
+    def get_detailed_game_data(self, game_id: int) -> Dict:
+        """Get comprehensive pitch-by-pitch data organized by half-inning and at-bat"""
+        try:
+            logger.info(f"Getting detailed pitch data for game {game_id}")
+            
+            # Get Baseball Savant data
+            url = f"https://baseballsavant.mlb.com/gf?game_pk={game_id}"
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Referer': 'https://www.mlb.com/',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Connection': 'keep-alive',
+            }
+            
+            response = requests.get(url, headers=headers, timeout=15)
+            if response.status_code != 200:
+                logger.error(f"Failed to get Baseball Savant data: {response.status_code}")
+                return {}
+            
+            data = response.json()
+            
+            # Organize data by half-inning and at-bat
+            organized_data = {
+                'game_id': game_id,
+                'game_info': {
+                    'home_team': data.get('home_team_data', {}).get('abbreviation', 'HOME'),
+                    'away_team': data.get('away_team_data', {}).get('abbreviation', 'AWAY'),
+                    'game_date': data.get('game_date', ''),
+                    'venue': data.get('venue_name', '')
+                },
+                'half_innings': {}
+            }
+            
+            # Process both home and away team data
+            teams_data = [
+                (data.get('team_home', []), 'home', 'bottom'),
+                (data.get('team_away', []), 'away', 'top')
+            ]
+            
+            for team_plays, team_type, inning_half in teams_data:
+                if not isinstance(team_plays, list):
+                    continue
+                    
+                for play in team_plays:
+                    inning = play.get('inning', 1)
+                    half_inning_key = f"{inning_half}_{inning}"
+                    
+                    if half_inning_key not in organized_data['half_innings']:
+                        organized_data['half_innings'][half_inning_key] = {
+                            'inning': inning,
+                            'half': inning_half,
+                            'display_name': f"{inning_half.title()} {inning}",
+                            'at_bats': {}
+                        }
+                    
+                    # Group plays by at-bat (batter + at_bat_number if available)
+                    batter_name = play.get('batter_name', 'Unknown Batter')
+                    at_bat_number = play.get('at_bat_number', 0)
+                    at_bat_key = f"{batter_name}_{at_bat_number}"
+                    
+                    if at_bat_key not in organized_data['half_innings'][half_inning_key]['at_bats']:
+                        organized_data['half_innings'][half_inning_key]['at_bats'][at_bat_key] = {
+                            'batter_name': batter_name,
+                            'at_bat_number': at_bat_number,
+                            'result': play.get('events', 'In Progress'),
+                            'pitches': [],
+                            'final_play': None
+                        }
+                    
+                    # Add this play/pitch to the at-bat
+                    pitch_data = {
+                        'play_id': play.get('play_id'),
+                        'pitch_number': play.get('pitch_number', 1),
+                        'pitch_type': play.get('pitch_name', 'Unknown'),
+                        'velocity': play.get('release_speed', 0),
+                        'result': play.get('description', ''),
+                        'pitcher_name': play.get('pitcher_name', 'Unknown Pitcher'),
+                        'count': f"{play.get('balls', 0)}-{play.get('strikes', 0)}",
+                        'team_batting': team_type,
+                        'video_available': bool(play.get('play_id'))  # Has UUID = video available
+                    }
+                    
+                    organized_data['half_innings'][half_inning_key]['at_bats'][at_bat_key]['pitches'].append(pitch_data)
+                    
+                    # If this is the final pitch of the at-bat, mark it
+                    if play.get('events') and play.get('events') != '':
+                        organized_data['half_innings'][half_inning_key]['at_bats'][at_bat_key]['final_play'] = pitch_data
+                        organized_data['half_innings'][half_inning_key]['at_bats'][at_bat_key]['result'] = play.get('events')
+            
+            # Sort pitches within each at-bat by pitch number
+            for half_inning in organized_data['half_innings'].values():
+                for at_bat in half_inning['at_bats'].values():
+                    at_bat['pitches'].sort(key=lambda p: p.get('pitch_number', 0))
+            
+            total_pitches = sum(
+                len(at_bat['pitches']) 
+                for half_inning in organized_data['half_innings'].values() 
+                for at_bat in half_inning['at_bats'].values()
+            )
+            
+            logger.info(f"✅ Organized {total_pitches} pitches across {len(organized_data['half_innings'])} half-innings")
+            return organized_data
+            
+        except Exception as e:
+            logger.error(f"Error getting detailed game data: {e}")
+            return {}
+
+    def get_pitch_video_url(self, game_id: int, play_id: str, team_batting: str) -> Optional[str]:
+        """Get video URL for a specific pitch using the play_id (UUID)"""
+        try:
+            if not play_id:
+                return None
+                
+            # Determine team path based on batting team
+            team_path = 'home' if team_batting == 'home' else 'away'
+            
+            # Use proper headers for MLB access
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Referer': 'https://www.mlb.com/',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Connection': 'keep-alive',
+            }
+            
+            # Try HLS first (more reliable), then MP4
+            video_urls = [
+                f"https://fastball-clips.mlb.com/{game_id}/{team_path}/{play_id}.m3u8",
+                f"https://fastball-clips.mlb.com/{game_id}/{team_path}/{play_id}.mp4"
+            ]
+            
+            for video_url in video_urls:
+                try:
+                    # Test if video URL is accessible
+                    video_response = requests.head(video_url, headers=headers, timeout=10)
+                    if video_response.status_code == 200:
+                        logger.info(f"✅ Found pitch video: {video_url}")
+                        return video_url
+                except Exception:
+                    continue
+            
+            logger.warning(f"No video found for pitch {play_id}")
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error getting pitch video URL: {e}")
+            return None
+
+    def create_gif_for_pitch(self, game_id: int, play_id: str, team_batting: str, pitch_info: Dict = None) -> Optional[str]:
+        """Create a GIF for a specific pitch"""
+        try:
+            logger.info(f"Creating GIF for pitch - game {game_id}, play {play_id}")
+            
+            # Get the pitch video URL
+            video_url = self.get_pitch_video_url(game_id, play_id, team_batting)
+            
+            if not video_url:
+                logger.warning(f"❌ No video available for pitch {play_id}")
+                return None
+                
+            logger.info("✅ Found pitch video, creating GIF...")
+            
+            # Create descriptive filename
+            if pitch_info:
+                batter = pitch_info.get('batter_name', 'unknown').replace(' ', '_')
+                pitch_type = pitch_info.get('pitch_type', 'pitch').replace(' ', '_')
+                velocity = pitch_info.get('velocity', 0)
+                gif_filename = f"pitch_{batter}_{pitch_type}_{velocity}mph_{game_id}_{play_id[:8]}.gif"
+            else:
+                gif_filename = f"pitch_{game_id}_{play_id[:8]}_{datetime.now().strftime('%H%M%S')}.gif"
+            
+            gif_path = self.temp_dir / gif_filename
+            
+            success = self.download_and_convert_to_gif(video_url, str(gif_path))
+            
+            if success and gif_path.exists():
+                logger.info(f"✅ Successfully created pitch GIF: {gif_path}")
+                return str(gif_path)
+            else:
+                logger.error(f"❌ Failed to create GIF for pitch {play_id}")
+                return None
+            
+        except Exception as e:
+            logger.error(f"Error creating GIF for pitch {play_id}: {e}")
+            return None
 
 # Maintain compatibility with existing code
 class BaseballSavantGIFIntegration(MLBHighlightGIFIntegration):

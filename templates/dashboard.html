@@ -381,6 +381,161 @@
             border-top: 1px solid rgba(255,255,255,0.1);
         }
 
+        /* Plays Section Styling */
+        .plays-section {
+            margin-bottom: 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 15px;
+        }
+
+        .plays-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .plays-title {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #ff6b35;
+        }
+
+        .plays-list {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .play-item {
+            background: rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-left: 3px solid #007bff;
+            transition: all 0.3s ease;
+        }
+
+        .play-item:hover {
+            background: rgba(255,255,255,0.12);
+            transform: translateX(2px);
+        }
+
+        .play-item.high-impact {
+            border-left-color: #ff6b35;
+            background: rgba(255, 107, 53, 0.1);
+        }
+
+        .play-item.gif-created {
+            border-left-color: #28a745;
+            background: rgba(40, 167, 69, 0.1);
+        }
+
+        .play-item.gif-processing {
+            border-left-color: #ffc107;
+            background: rgba(255, 193, 7, 0.1);
+        }
+
+        .play-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .play-event-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .play-event {
+            font-weight: bold;
+            font-size: 1em;
+            color: #ff6b35;
+        }
+
+        .play-impact {
+            font-size: 0.85em;
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .play-description {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .play-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 8px;
+            flex-grow: 1;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .detail-label {
+            font-size: 0.7em;
+            opacity: 0.6;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .detail-value {
+            font-size: 0.85em;
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .play-actions {
+            flex-shrink: 0;
+        }
+
+        .create-gif-btn {
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .create-gif-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 123, 255, 0.4);
+        }
+
+        .create-gif-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .highlights-section {
             margin-bottom: 20px;
             background: rgba(255, 193, 7, 0.1);
@@ -728,7 +883,20 @@
     <div class="container">
         <div class="header">
             <h1>🎬 MLB Manual GIF Dashboard</h1>
-            <div class="status" id="status">Loading...</div>
+            <div class="status" id="status">
+                <div class="status-bar">
+                    <div class="status-item">
+                        <div class="status-indicator" id="status-indicator"></div>
+                        <span id="status-text">Loading...</span>
+                    </div>
+                    <div class="status-item">
+                        <span id="last-update">Last Update: Never</span>
+                    </div>
+                    <div class="game-summary" id="game-summary">
+                        <!-- Game summary will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="control-bar">
@@ -884,6 +1052,32 @@
                 const response = await fetch('/api/games');
                 const gamesData = await response.json();
 
+                // Update status display
+                const statusIndicator = document.getElementById('status-indicator');
+                const statusText = document.getElementById('status-text');
+                const lastUpdate = document.getElementById('last-update');
+                const gameSummary = document.getElementById('game-summary');
+
+                if (statusIndicator && statusText) {
+                    statusIndicator.className = 'status-indicator';
+                    statusText.textContent = gamesData.monitoring ? 'System Active' : 'System Inactive';
+                }
+
+                if (lastUpdate && gamesData.last_update) {
+                    const updateTime = new Date(gamesData.last_update);
+                    lastUpdate.textContent = `Last Update: ${updateTime.toLocaleTimeString()}`;
+                }
+
+                if (gameSummary && gamesData.summary) {
+                    const summary = gamesData.summary;
+                    gameSummary.innerHTML = `
+                        <div class="summary-item live">${summary.live} Live</div>
+                        <div class="summary-item warmup">${summary.warmup} Warmup</div>
+                        <div class="summary-item scheduled">${summary.scheduled} Scheduled</div>
+                        <div class="summary-item final">${summary.final} Final</div>
+                    `;
+                }
+
                 if (gamesData.games.length === 0) {
                     document.getElementById('games-container').innerHTML = `
                         <div class="no-games">
@@ -910,6 +1104,14 @@
             } catch (error) {
                 console.error('Error loading games:', error);
                 showToast('Failed to load games', 'error');
+                
+                // Update status to show error
+                const statusIndicator = document.getElementById('status-indicator');
+                const statusText = document.getElementById('status-text');
+                if (statusIndicator && statusText) {
+                    statusIndicator.className = 'status-indicator inactive';
+                    statusText.textContent = 'Connection Error';
+                }
             }
         }
 
@@ -933,19 +1135,19 @@
                 const isExpanded = allGamesExpanded || expandedGames.has(game.game_id);
                 const playCount = game.plays.length;
                 
-                // Determine game status color
-                let statusColor = 'gray';  // default/scheduled
+                // Determine game status class for proper styling
+                let gameStatusClass = 'scheduled';  // default
                 const gameState = (game.game_state || '').toLowerCase();
                 if (gameState.includes('live') || gameState.includes('progress')) {
-                    statusColor = 'green';
+                    gameStatusClass = 'live';
                 } else if (gameState.includes('warmup') || gameState.includes('pre-game')) {
-                    statusColor = 'yellow';
+                    gameStatusClass = 'warmup';
                 } else if (gameState.includes('final') || gameState.includes('completed')) {
-                    statusColor = 'purple';
+                    gameStatusClass = 'final';
                 }
                 
                 html += `
-                    <div class="game-card" style="border-left: 4px solid ${statusColor};">
+                    <div class="game-card ${gameStatusClass}">
                         <div class="game-header" onclick="toggleGame(${game.game_id})">
                             <div class="game-teams">
                                 <div class="team-info">
@@ -1004,16 +1206,16 @@
                                 </div>
                             </div>
                             
-                            <!-- Highlights Section (Alternative/Backup) -->
+                            <!-- MLB API Highlights Section (Primary Method) -->
                             <div class="highlights-section">
                                 <div class="highlights-header">
-                                    <span class="highlights-title">📺 Game Highlights (Backup Method)</span>
+                                    <span class="highlights-title">📺 MLB Official Highlights (Recommended)</span>
                                     <button class="load-highlights-btn" onclick="loadHighlights(${game.game_id})">
                                         Load Highlights
                                     </button>
                                 </div>
                                 <div id="highlights-${game.game_id}" class="highlights-list">
-                                    <div class="no-highlights">Click "Load Highlights" to see compiled video highlights</div>
+                                    <div class="no-highlights">Click "Load Highlights" to see official MLB compiled video highlights</div>
                                 </div>
                             </div>
                         </div>

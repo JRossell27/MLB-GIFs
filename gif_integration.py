@@ -463,68 +463,35 @@ class MLBHighlightGIFIntegration:
                 logger.warning(f"Error cleaning up temp files: {cleanup_error}")
     
     def create_gif_for_play(self, game_id: int, play_id: int, game_date: str, mlb_play_data: Dict = None) -> Optional[str]:
-        """Create a GIF for a specific play using Baseball Savant (primary) or MLB highlights (fallback)"""
+        """Create a GIF for a specific play using Baseball Savant individual play videos ONLY"""
         try:
             logger.info(f"Creating GIF for play - game {game_id}, play {play_id}")
             
-            # METHOD 1: Try Baseball Savant individual play video first
+            # ONLY METHOD: Try Baseball Savant individual play video
             logger.info("🎯 Trying Baseball Savant individual play video...")
             savant_video_url = self.get_baseball_savant_play_video(game_id, play_id, mlb_play_data)
             
-            if savant_video_url:
-                logger.info("✅ Found Baseball Savant play video, creating GIF...")
-                
-                event_type = 'play'
-                if mlb_play_data:
-                    event_type = mlb_play_data.get('result', {}).get('event', 'play').lower().replace(' ', '_')
-                
-                gif_filename = f"mlb_savant_{event_type}_{game_id}_{play_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.gif"
-                gif_path = self.temp_dir / gif_filename
-                
-                success = self.download_and_convert_to_gif(savant_video_url, str(gif_path))
-                
-                if success and gif_path.exists():
-                    logger.info(f"✅ Successfully created Baseball Savant GIF: {gif_path}")
-                    return str(gif_path)
-                else:
-                    logger.warning("❌ Baseball Savant GIF creation failed, trying highlights fallback...")
-            else:
-                logger.info("⚠️ No Baseball Savant video found, trying highlights fallback...")
-            
-            # METHOD 2: Fallback to MLB-StatsAPI highlights
-            logger.info("🎬 Trying MLB-StatsAPI highlights fallback...")
-            highlights = self.get_game_highlights(game_id)
-            if not highlights:
-                logger.warning(f"No highlights found for game {game_id}")
+            if not savant_video_url:
+                # No fallback - fail cleanly with specific error message
+                logger.warning(f"❌ No Baseball Savant video available for play {play_id} in game {game_id}")
                 return None
+                
+            logger.info("✅ Found Baseball Savant play video, creating GIF...")
             
-            # Find the best matching highlight
-            best_highlight = self.find_matching_highlight(highlights, mlb_play_data)
-            if not best_highlight:
-                logger.warning(f"No suitable highlight found for play {play_id}")
-                return None
-            
-            # Get the best video URL
-            video_url = self.get_best_video_url(best_highlight)
-            if not video_url:
-                logger.warning(f"No video URL found in highlight")
-                return None
-            
-            # Create the GIF
             event_type = 'play'
             if mlb_play_data:
                 event_type = mlb_play_data.get('result', {}).get('event', 'play').lower().replace(' ', '_')
             
-            gif_filename = f"mlb_highlight_{event_type}_{game_id}_{play_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.gif"
+            gif_filename = f"mlb_savant_{event_type}_{game_id}_{play_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.gif"
             gif_path = self.temp_dir / gif_filename
             
-            success = self.download_and_convert_to_gif(video_url, str(gif_path))
+            success = self.download_and_convert_to_gif(savant_video_url, str(gif_path))
             
             if success and gif_path.exists():
-                logger.info(f"✅ Successfully created highlight fallback GIF: {gif_path}")
+                logger.info(f"✅ Successfully created Baseball Savant GIF: {gif_path}")
                 return str(gif_path)
             else:
-                logger.error(f"❌ Failed to create any GIF for play {play_id} in game {game_id}")
+                logger.error(f"❌ Failed to create GIF from Baseball Savant video for play {play_id}")
                 return None
             
         except Exception as e:

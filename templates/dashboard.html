@@ -1419,8 +1419,10 @@
                     setTimeout(loadGames, 1000);
                 } else {
                     // Show specific error message
-                    if (result.error.includes('No video data available')) {
-                        showToast('⚠️ No video footage available for this play. Only plays with MLB video can be converted to GIFs.', 'warning');
+                    if (result.error.includes('No Baseball Savant video available')) {
+                        showToast('⚠️ No Baseball Savant video available for this play. Individual play videos are not available from Baseball Savant for this game.', 'warning');
+                    } else if (result.error.includes('No video data available')) {
+                        showToast('⚠️ No video footage available for this play. Only plays with Baseball Savant video can be converted to GIFs.', 'warning');
                     } else if (result.error.includes('No Statcast data')) {
                         showToast('⚠️ No Statcast data found for this play. Video may not be available yet.', 'warning');
                     } else {

@@ -537,8 +537,8 @@ class ManualGIFDashboard:
                     return {"success": False, "error": "Failed to send VIDEO GIF to Discord"}
             else:
                 play.gif_processing = False
-                logger.warning(f"⚠️ No video data available for {play.event} by {play.batter}")
-                return {"success": False, "error": "No video data available for this play. Only plays with actual video footage can be converted to GIFs."}
+                logger.warning(f"⚠️ No Baseball Savant video available for {play.event} by {play.batter}")
+                return {"success": False, "error": "No Baseball Savant video available for this play. Individual play videos are not available from Baseball Savant for this game or this specific play."}
                 
         except Exception as e:
             logger.error(f"Error creating VIDEO GIF for play {play_id}: {e}")

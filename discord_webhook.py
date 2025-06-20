@@ -107,7 +107,7 @@ class DiscordWebhook:
                     timeout=30
                 )
             
-            if response.status_code == 204:
+            if response.status_code in [200, 204]:
                 logger.info("✅ Discord notification sent successfully")
                 return True
             else:

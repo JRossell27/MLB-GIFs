@@ -733,13 +733,20 @@ def api_create_highlight_gif():
         if not video_url:
             return jsonify({"success": False, "error": "No video URL found in highlight"}), 400
         
+        # Get highlight duration if available
+        highlight_duration = highlight.get('duration', None)
+        
         # Create GIF filename
         highlight_title = highlight.get('title', 'highlight').replace(' ', '_').replace('/', '_')
         gif_filename = f"mlb_highlight_{game_id}_{highlight_index}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.gif"
         gif_path = dashboard.gif_integration.temp_dir / gif_filename
         
-        # Download and convert to GIF
-        success = dashboard.gif_integration.download_and_convert_to_gif(video_url, str(gif_path))
+        # Download and convert to GIF using full highlight duration
+        success = dashboard.gif_integration.download_and_convert_to_gif(
+            video_url, 
+            str(gif_path), 
+            highlight_duration=highlight_duration
+        )
         
         if success and gif_path.exists():
             logger.info(f"Successfully created highlight GIF: {gif_path}")

@@ -183,7 +183,7 @@ class MLBHighlightGIFIntegration:
             logger.error(f"Error extracting video URL: {e}")
             return None
     
-    def download_and_convert_to_gif(self, video_url: str, output_path: str, max_duration: int = 8) -> bool:
+    def download_and_convert_to_gif(self, video_url: str, output_path: str, highlight_duration: Optional[str] = None) -> bool:
         """Download video and convert to GIF using ffmpeg"""
         temp_video = None
         palette_file = None
@@ -207,19 +207,45 @@ class MLBHighlightGIFIntegration:
             video_size = temp_video.stat().st_size / 1024 / 1024
             logger.info(f"Video file size: {video_size:.1f}MB")
             
+            # Parse highlight duration if provided
+            duration_seconds = None
+            if highlight_duration:
+                try:
+                    # Convert duration like "00:00:15" to seconds
+                    if ':' in highlight_duration:
+                        parts = highlight_duration.split(':')
+                        if len(parts) == 3:  # HH:MM:SS
+                            duration_seconds = int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
+                        elif len(parts) == 2:  # MM:SS
+                            duration_seconds = int(parts[0]) * 60 + int(parts[1])
+                    else:
+                        # Already in seconds
+                        duration_seconds = int(float(highlight_duration))
+                    
+                    logger.info(f"Using highlight duration: {duration_seconds} seconds")
+                except (ValueError, IndexError):
+                    logger.warning(f"Could not parse duration '{highlight_duration}', using full video")
+                    duration_seconds = None
+            
             # Use simpler, faster conversion for memory-constrained environment
-            # Skip palette generation for speed and memory efficiency
-            logger.info("Converting to GIF (optimized for low memory)...")
+            logger.info("Converting to GIF (using full highlight duration)...")
             
             gif_cmd = [
                 'ffmpeg',
                 '-i', str(temp_video),
-                '-t', str(max_duration),  # Limit duration
-                '-vf', 'fps=12,scale=400:-1:flags=lanczos',  # Lower resolution and fps for smaller file
+                '-vf', 'fps=15,scale=480:-1:flags=lanczos',  # Better quality: higher resolution and fps
                 '-loop', '0',  # Loop forever
                 '-y',  # Overwrite output
                 output_path
             ]
+            
+            # Add duration limit only if we have one and it's reasonable (under 20 seconds)
+            if duration_seconds and duration_seconds <= 20:
+                gif_cmd.insert(3, '-t')
+                gif_cmd.insert(4, str(duration_seconds))
+                logger.info(f"Limiting GIF to {duration_seconds} seconds")
+            else:
+                logger.info("Using full video duration (no time limit)")
             
             # Run with timeout and capture output
             result = subprocess.run(
@@ -227,7 +253,7 @@ class MLBHighlightGIFIntegration:
                 check=True, 
                 capture_output=True, 
                 text=True,
-                timeout=60  # 60 second timeout
+                timeout=90  # Increased timeout for longer videos
             )
             
             logger.info("GIF conversion completed successfully")
@@ -242,14 +268,14 @@ class MLBHighlightGIFIntegration:
             file_size_mb = file_size / 1024 / 1024
             
             if file_size > 8 * 1024 * 1024:
-                logger.warning(f"GIF too large: {file_size_mb:.1f}MB, trying smaller version...")
+                logger.warning(f"GIF too large: {file_size_mb:.1f}MB, trying with shorter duration...")
                 
-                # Try again with even smaller settings
+                # Try again with 10 second limit
                 smaller_cmd = [
                     'ffmpeg',
                     '-i', str(temp_video),
-                    '-t', '6',  # Shorter duration
-                    '-vf', 'fps=10,scale=320:-1:flags=lanczos',  # Even smaller
+                    '-t', '10',  # 10 second fallback
+                    '-vf', 'fps=12,scale=400:-1:flags=lanczos',  # Smaller fallback
                     '-loop', '0',
                     '-y',
                     output_path
@@ -260,7 +286,7 @@ class MLBHighlightGIFIntegration:
                     check=True, 
                     capture_output=True, 
                     text=True,
-                    timeout=45
+                    timeout=60
                 )
                 
                 file_size = Path(output_path).stat().st_size

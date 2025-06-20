@@ -306,6 +306,19 @@ class MLBHighlightGIFIntegration:
                 # For HLS streams, use ffmpeg to download and convert directly
                 logger.info("Processing HLS stream directly with ffmpeg...")
                 
+                # Quick test to see if HLS stream is accessible
+                try:
+                    test_response = requests.head(video_url, headers={
+                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                        'Referer': 'https://www.mlb.com/',
+                        'Accept': 'video/mp4,video/*;q=0.9,*/*;q=0.8',
+                        'Accept-Language': 'en-US,en;q=0.5',
+                        'Connection': 'keep-alive',
+                    }, timeout=10)
+                    logger.info(f"HLS stream test: {test_response.status_code}")
+                except Exception as e:
+                    logger.warning(f"HLS stream test failed: {e}")
+                
                 # Parse highlight duration if provided
                 duration_seconds = None
                 if highlight_duration:
@@ -329,6 +342,9 @@ class MLBHighlightGIFIntegration:
                 # Build ffmpeg command for HLS input
                 gif_cmd = [
                     'ffmpeg',
+                    '-user_agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                    '-referer', 'https://www.mlb.com/',
+                    '-headers', 'Accept: video/mp4,video/*;q=0.9,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nConnection: keep-alive\r\n',
                     '-i', video_url,
                     '-vf', 'fps=15,scale=480:-1:flags=lanczos',
                     '-loop', '0',
@@ -470,6 +486,21 @@ class MLBHighlightGIFIntegration:
                     '-y',
                     output_path
                 ]
+                
+                # Add headers for HLS streams in fallback too
+                if is_hls:
+                    smaller_cmd = [
+                        'ffmpeg',
+                        '-user_agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                        '-referer', 'https://www.mlb.com/',
+                        '-headers', 'Accept: video/mp4,video/*;q=0.9,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nConnection: keep-alive\r\n',
+                        '-i', input_source,
+                        '-t', '10',
+                        '-vf', 'fps=12,scale=400:-1:flags=lanczos',
+                        '-loop', '0',
+                        '-y',
+                        output_path
+                    ]
                 
                 result = subprocess.run(
                     smaller_cmd, 

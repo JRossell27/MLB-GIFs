@@ -489,7 +489,7 @@ class ManualGIFDashboard:
             logger.info(f"Creating VIDEO GIF for {play.event} by {play.batter} in game {play.game_id}")
             
             # Create GIF using existing integration - ONLY REAL VIDEO, NO FALLBACKS
-            gif_path = self.gif_integration.get_gif_for_play(
+            gif_path = self.gif_integration.create_gif_for_play(
                 game_id=play.game_id,
                 play_id=int(play.play_id.split('_')[1]),
                 game_date=play.game_date,

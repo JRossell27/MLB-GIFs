@@ -41,143 +41,107 @@ class MLBHighlightGIFIntegration:
         self.savant_base = "https://baseballsavant.mlb.com"
     
     def get_baseball_savant_play_video(self, game_id: int, play_id: int, mlb_play_data: Dict = None) -> Optional[str]:
-        """Get individual play video from Baseball Savant using /gf endpoint and play UUIDs"""
+        """Get video URL for a specific play from Baseball Savant using the correct fastball-clips pattern"""
         try:
-            logger.info(f"Trying Baseball Savant individual play video for game {game_id}, play {play_id}")
+            # Get all plays from Baseball Savant
+            url = f"https://baseballsavant.mlb.com/gf?game_pk={game_id}"
             
-            # Step 1: Get play UUID from Baseball Savant /gf endpoint
-            gf_url = f"{self.savant_base}/gf?game_pk={game_id}"
-            logger.info(f"Fetching play data from: {gf_url}")
+            # Use proper headers for MLB access
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Referer': 'https://www.mlb.com/',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Connection': 'keep-alive',
+            }
             
-            gf_response = requests.get(gf_url, timeout=15)
-            if gf_response.status_code != 200:
-                logger.warning(f"Baseball Savant /gf endpoint failed: {gf_response.status_code}")
+            response = requests.get(url, headers=headers, timeout=15)
+            if response.status_code != 200:
+                logger.warning(f"Baseball Savant API failed: {response.status_code}")
                 return None
             
-            gf_data = gf_response.json()
+            data = response.json()
             
-            # Look in both home and away team plays
+            # Extract all plays from both teams
             all_plays = []
-            all_plays.extend(gf_data.get('team_home', []))
-            all_plays.extend(gf_data.get('team_away', []))
+            if 'team_home' in data and isinstance(data['team_home'], list):
+                all_plays.extend([(play, 'home') for play in data['team_home']])
+            if 'team_away' in data and isinstance(data['team_away'], list):
+                all_plays.extend([(play, 'away') for play in data['team_away']])
             
-            logger.info(f"Found {len(all_plays)} total plays in Baseball Savant game data")
+            logger.info(f"Found {len(all_plays)} plays from Baseball Savant")
             
-            # Step 2: Find matching play UUID
-            target_play_uuid = None
+            if not all_plays:
+                logger.warning("No plays found in Baseball Savant data")
+                return None
+            
+            # Find matching play using sophisticated matching
+            target_play = None
+            target_team_path = None
             
             if mlb_play_data:
-                target_event = mlb_play_data.get('result', {}).get('event', '').lower()
-                target_inning = mlb_play_data.get('about', {}).get('inning')
-                target_batter = mlb_play_data.get('matchup', {}).get('batter', {}).get('fullName', '')
+                # Try to match using MLB play data
+                target_batter = mlb_play_data.get('batter_name', '').strip()
+                target_event = mlb_play_data.get('event', '').strip()
+                target_inning = mlb_play_data.get('inning')
                 
-                logger.info(f"Looking for {target_batter} {target_event} in inning {target_inning}")
+                logger.info(f"Looking for play: {target_batter} - {target_event} (Inning {target_inning})")
                 
-                # Find best matching play
-                best_matches = []
-                for play in all_plays:
-                    play_event = play.get('events', '').lower()
-                    play_description = play.get('des', '').lower()
+                for play, team_path in all_plays:
+                    play_batter = play.get('batter_name', '').strip()
+                    play_event = play.get('events', '').strip()
                     play_inning = play.get('inning')
-                    play_batter = play.get('batter_name', '')
-                    play_uuid = play.get('play_id')
                     
-                    # Must match inning and have a play UUID
-                    if str(play_inning) == str(target_inning) and play_uuid:
-                        score = 0
-                        
-                        # Batter name match
-                        if target_batter and (target_batter.split()[-1].lower() in play_batter.lower() or 
-                                            play_batter.split()[-1].lower() in target_batter.lower()):
-                            score += 100
-                        
-                        # This is the actual contact pitch (highest priority)
-                        pitch_call = play.get('pitch_call', '')
-                        call = play.get('call', '')
-                        if pitch_call == 'hit_into_play' or call == 'X':
-                            score += 1000
-                        
-                        # Event description match
-                        if target_event in play_description or target_event.replace(' ', '') in play_description.replace(' ', ''):
-                            score += 200
-                        
-                        if score > 0:
-                            best_matches.append((score, play_uuid, play))
-                            logger.debug(f"Play match score {score}: {play_batter} - {play_description[:50]}")
-                
-                if best_matches:
-                    best_matches.sort(key=lambda x: x[0], reverse=True)
-                    target_play_uuid = best_matches[0][1]
-                    logger.info(f"Selected best matching play UUID: {target_play_uuid}")
-                else:
-                    logger.warning("No matching plays found in Baseball Savant data")
-                    return None
-            else:
-                # No MLB play data, use first available play with UUID
-                for play in all_plays:
-                    if play.get('play_id'):
-                        target_play_uuid = play.get('play_id')
-                        logger.info(f"Using first available play UUID: {target_play_uuid}")
+                    # Match by batter name and inning
+                    if (play_batter == target_batter and 
+                        play_inning == target_inning and
+                        (not target_event or play_event == target_event)):
+                        target_play = play
+                        target_team_path = team_path
+                        logger.info(f"✅ Found matching play: {play_batter} - {play_event}")
                         break
             
-            if not target_play_uuid:
+            # If no MLB data match, try to find by play_id or use first play
+            if not target_play and all_plays:
+                target_play, target_team_path = all_plays[0]  # Use first play as fallback
+                logger.info(f"Using first available play as fallback")
+            
+            if not target_play:
+                logger.warning("No suitable play found for video")
+                return None
+            
+            # Extract play UUID
+            play_uuid = target_play.get('play_id')
+            if not play_uuid:
                 logger.warning("No play UUID found")
                 return None
             
-            # Step 3: Get video URL from sporty-videos endpoint
-            sporty_url = f"{self.savant_base}/sporty-videos?playId={target_play_uuid}"
-            logger.info(f"Getting video from: {sporty_url}")
-            
-            response = requests.get(sporty_url, timeout=15)
-            if response.status_code != 200:
-                logger.warning(f"Baseball Savant sporty-videos failed: {response.status_code}")
-                return None
-            
-            html_content = response.text
-            logger.info(f"Got video page ({len(html_content)} chars)")
-            
-            # Step 4: Extract video URL from HTML using discovered patterns
-            video_url_patterns = [
-                # Primary pattern discovered from testing - sporty-clips.mlb.com with encoded strings
-                r'https://sporty-clips\.mlb\.com/[A-Za-z0-9+/=_-]+\.mp4',
-                # Alternative patterns
-                r'"src":\s*"(https://sporty-clips\.mlb\.com/[^"]*\.mp4)"',
-                r'data-src="(https://sporty-clips\.mlb\.com/[^"]*\.mp4)"',
-                r'<source[^>]*src="(https://sporty-clips\.mlb\.com/[^"]*\.mp4)"',
-                # Other MLB video domains we might encounter
-                r'https://mlb-cuts-diamond\.mlb\.com/[^"\s]*\.mp4',
-                r'https://cuts\.diamond\.mlb\.com/[^"\s]*\.mp4',
-                r'https://bdata-producedclips\.mlb\.com/[^"\s]*\.mp4',
+            # Construct the correct video URL using fastball-clips pattern
+            # Try MP4 first, then HLS
+            video_urls = [
+                f"https://fastball-clips.mlb.com/{game_id}/{target_team_path}/{play_uuid}.mp4",
+                f"https://fastball-clips.mlb.com/{game_id}/{target_team_path}/{play_uuid}.m3u8"
             ]
             
-            for pattern in video_url_patterns:
-                matches = re.findall(pattern, html_content, re.IGNORECASE)
-                for match in matches:
-                    video_url = match[0] if isinstance(match, tuple) else match
-                    logger.info(f"Found potential video URL: {video_url}")
-                    
-                    # Test if this URL actually works
-                    try:
-                        test_response = requests.head(video_url, timeout=10)
-                        if test_response.status_code == 200:
-                            content_type = test_response.headers.get('content-type', '')
-                            content_length = test_response.headers.get('content-length', '0')
-                            logger.info(f"Video URL test - Status: {test_response.status_code}, Type: {content_type}, Size: {content_length}")
-                            
-                            # Accept any successful response (not just video content-type)
-                            # Baseball Savant videos may not always have proper content-type headers
-                            if test_response.status_code == 200:
-                                logger.info(f"✅ Confirmed working Baseball Savant video URL: {video_url}")
-                                return video_url
-                    except Exception as e:
-                        logger.warning(f"Video URL test failed: {e}")
-                        continue
+            for video_url in video_urls:
+                logger.info(f"Testing video URL: {video_url}")
+                try:
+                    # Test if video URL is accessible
+                    video_response = requests.head(video_url, headers=headers, timeout=10)
+                    if video_response.status_code == 200:
+                        logger.info(f"✅ Found working Baseball Savant video: {video_url}")
+                        return video_url
+                    else:
+                        logger.info(f"Video URL returned {video_response.status_code}")
+                except Exception as e:
+                    logger.info(f"Video URL test failed: {e}")
+                    continue
             
-            logger.warning("No working video URL found in Baseball Savant HTML")
+            logger.warning(f"No working video URLs found for play UUID {play_uuid}")
             return None
             
         except Exception as e:
-            logger.error(f"Error getting Baseball Savant play video: {e}")
+            logger.error(f"Error getting Baseball Savant video: {e}")
             return None
 
     def get_game_highlights(self, game_id: int) -> List[Dict]:

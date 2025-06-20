@@ -228,22 +228,43 @@ class BaseballSavantGIFIntegration:
                         logger.info(f"Found contact play: {play.get('batter_name')} - {play.get('des')}")
                         break
             
+            # If still no UUID, just take the first play with a UUID
+            if not target_play_uuid:
+                logger.info("No contact play found, trying any play with UUID...")
+                for play in all_plays:
+                    play_uuid = play.get('play_id')
+                    if play_uuid:
+                        target_play_uuid = play_uuid
+                        logger.info(f"Using any available play: {play.get('batter_name')} - {play.get('des')}")
+                        break
+            
             if not target_play_uuid:
                 logger.warning(f"Could not find matching play UUID for game {game_id}")
                 return None
             
-            # Try to get the video URL using the play UUID
-            video_url = f"{self.savant_base}/sporty-videos/webm/{target_play_uuid}.webm"
+            # Try multiple video URL formats
+            video_formats = [
+                f"{self.savant_base}/sporty-videos/webm/{target_play_uuid}.webm",
+                f"{self.savant_base}/sporty-videos/mp4/{target_play_uuid}.mp4",
+                f"{self.savant_base}/sporty-clips/{target_play_uuid}.mp4",
+                f"{self.savant_base}/clips/{target_play_uuid}.mp4"
+            ]
             
-            # Test if the URL exists
-            logger.info(f"Testing video URL: {video_url}")
-            test_response = requests.head(video_url, timeout=10)
-            if test_response.status_code == 200:
-                logger.info(f"✅ Found video URL: {video_url}")
-                return video_url
-            else:
-                logger.warning(f"❌ Video URL not accessible: {video_url} (status: {test_response.status_code})")
-                return None
+            for video_url in video_formats:
+                logger.info(f"Testing video URL: {video_url}")
+                try:
+                    test_response = requests.head(video_url, timeout=10)
+                    if test_response.status_code == 200:
+                        logger.info(f"✅ Found working video URL: {video_url}")
+                        return video_url
+                    else:
+                        logger.debug(f"❌ Video URL returned {test_response.status_code}: {video_url}")
+                except Exception as e:
+                    logger.debug(f"❌ Video URL test failed: {video_url} - {e}")
+                    continue
+            
+            logger.warning(f"❌ No working video URLs found for play UUID {target_play_uuid}")
+            return None
             
         except Exception as e:
             logger.error(f"Error getting play animation URL: {e}")
@@ -321,19 +342,16 @@ class BaseballSavantGIFIntegration:
         try:
             logger.info(f"Creating GIF for play - game {game_id}, play {play_id}")
             
-            # Step 1: Get Statcast data for the play
-            statcast_data = self.get_statcast_data_for_play(game_id, play_id, game_date, mlb_play_data)
-            if not statcast_data:
-                logger.warning(f"No Statcast data found for play {play_id} in game {game_id}")
-                return None
+            # Skip Statcast CSV check - go directly to /gf endpoint which we know has data
+            logger.info(f"Skipping Statcast CSV (unreliable) - going directly to /gf endpoint for game {game_id}")
             
-            # Step 2: Get the animation URL using the proven /gf endpoint approach
-            animation_url = self.get_play_animation_url(game_id, play_id, statcast_data, mlb_play_data)
+            # Step 1: Get the animation URL using the /gf endpoint approach
+            animation_url = self.get_play_animation_url(game_id, play_id, {}, mlb_play_data)
             if not animation_url:
                 logger.warning(f"No animation URL found for play {play_id} in game {game_id}")
                 return None
             
-            # Step 3: Create the GIF
+            # Step 2: Create the GIF
             event_type = 'play'
             if mlb_play_data:
                 event_type = mlb_play_data.get('result', {}).get('event', 'play').lower().replace(' ', '_')

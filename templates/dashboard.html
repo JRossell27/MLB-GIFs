@@ -452,6 +452,143 @@
             opacity: 0.8;
             font-style: italic;
         }
+
+        /* Collapsible game functionality */
+        .game-card.collapsed .plays-section {
+            display: none;
+        }
+
+        .game-header {
+            cursor: pointer;
+            position: relative;
+        }
+
+        .game-header:hover {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 10px;
+            margin: -10px -10px 10px -10px;
+        }
+
+        .expand-indicator {
+            font-size: 1.2em;
+            margin-left: 15px;
+            transition: transform 0.3s ease;
+        }
+
+        .game-card.collapsed .expand-indicator {
+            transform: rotate(-90deg);
+        }
+
+        /* Global filters */
+        .global-filters {
+            background: rgba(0,0,0,0.4);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-label {
+            font-weight: bold;
+            color: #ff6b35;
+            margin-right: 10px;
+        }
+
+        .filter-btn {
+            padding: 6px 12px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 15px;
+            color: white;
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn:hover {
+            background: rgba(255,107,53,0.3);
+            border-color: rgba(255,107,53,0.5);
+        }
+
+        .filter-btn.active {
+            background: rgba(255,107,53,0.6);
+            border-color: rgba(255,107,53,0.8);
+        }
+
+        .search-input {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: white;
+            font-size: 0.9em;
+            width: 200px;
+        }
+
+        .search-input::placeholder {
+            color: rgba(255,255,255,0.5);
+        }
+
+        .expand-all-btn {
+            background: linear-gradient(45deg, #6f42c1, #e83e8c);
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .expand-all-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(111, 66, 193, 0.4);
+        }
+
+        /* Inning organization */
+        .inning-section {
+            margin-bottom: 20px;
+        }
+
+        .inning-header {
+            background: rgba(255,255,255,0.1);
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #00ff88;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .inning-header:hover {
+            background: rgba(255,255,255,0.15);
+        }
+
+        .inning-header.collapsed + .inning-plays {
+            display: none;
+        }
+
+        .inning-plays {
+            margin-left: 15px;
+        }
+
+        .play-count-summary {
+            font-size: 0.85em;
+            opacity: 0.8;
+        }
     </style>
 </head>
 <body>
@@ -489,6 +626,21 @@
             <button onclick="refreshData()" class="btn btn-primary">🔄 Refresh Now</button>
         </div>
 
+        <div class="global-filters">
+            <div class="filter-row">
+                <span class="filter-label">🎯 Show:</span>
+                <button class="filter-btn active" onclick="toggleFilter('all')">All Plays</button>
+                <button class="filter-btn" onclick="toggleFilter('high-impact')">High Impact Only</button>
+                <button class="filter-btn" onclick="toggleFilter('recent')">Last 30 Minutes</button>
+                <button class="filter-btn" onclick="toggleFilter('hits')">Hits & Home Runs</button>
+            </div>
+            <div class="filter-row">
+                <span class="filter-label">🔍 Search:</span>
+                <input type="text" class="search-input" placeholder="Player name, team, or event..." id="searchInput" onkeyup="filterPlays()">
+                <button class="expand-all-btn" onclick="toggleAllGames()">📋 Expand All Games</button>
+            </div>
+        </div>
+
         <div id="gamesContainer" class="games-grid">
             <div class="no-games">
                 <h3>🔄 Loading Games...</h3>
@@ -499,6 +651,8 @@
 
     <script>
         let isRefreshing = false;
+        let currentFilter = 'all';
+        let allGamesExpanded = false;
 
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
@@ -610,11 +764,29 @@
                 }
             }
 
+            // Group plays by inning for better organization
+            const playsByInning = {};
+            sortedPlays.forEach(play => {
+                const inningKey = `${play.inning}${play.half_inning}`;
+                if (!playsByInning[inningKey]) {
+                    playsByInning[inningKey] = [];
+                }
+                playsByInning[inningKey].push(play);
+            });
+
+            const inningKeys = Object.keys(playsByInning).sort((a, b) => {
+                const aNum = parseInt(a.replace(/[TB]/g, ''));
+                const bNum = parseInt(b.replace(/[TB]/g, ''));
+                if (aNum !== bNum) return bNum - aNum; // Newest inning first
+                return a.includes('B') ? -1 : 1; // Bottom before top within same inning
+            });
+
             return `
-                <div class="game-card ${gameClass}">
-                    <div class="game-header">
+                <div class="game-card ${gameClass} collapsed" id="game-${game.game_id}">
+                    <div class="game-header" onclick="toggleGame(${game.game_id})">
                         <div class="game-matchup">
                             ${game.away_team} @ ${game.home_team}
+                            <span class="expand-indicator">🔽</span>
                         </div>
                         <div class="game-score">
                             ${isScheduled ? gameTimeDisplay : `${game.away_score} - ${game.home_score}`}
@@ -654,10 +826,28 @@
                             <div class="plays-count">${game.plays.length} plays</div>
                         </div>
                         <div class="plays-list">
-                            ${sortedPlays.map(play => createPlayItem(play)).join('')}
+                            ${inningKeys.length > 0 ? inningKeys.map(inningKey => createInningSection(inningKey, playsByInning[inningKey])).join('') : '<div style="text-align: center; padding: 20px; opacity: 0.7;">No plays yet - game just started!</div>'}
                         </div>
                     </div>
                     `}
+                </div>
+            `;
+        }
+
+        function createInningSection(inningKey, plays) {
+            const inning = inningKey.replace(/[TB]/g, '');
+            const half = inningKey.includes('T') ? 'Top' : 'Bottom';
+            const highImpactCount = plays.filter(p => p.impact_score > 0.2).length;
+            
+            return `
+                <div class="inning-section">
+                    <div class="inning-header" onclick="toggleInning('${inningKey}')">
+                        <span>📍 ${half} ${inning}</span>
+                        <span class="play-count-summary">${plays.length} plays ${highImpactCount > 0 ? `(${highImpactCount} high-impact)` : ''}</span>
+                    </div>
+                    <div class="inning-plays" id="inning-${inningKey}">
+                        ${plays.map(play => createPlayItem(play)).join('')}
+                    </div>
                 </div>
             `;
         }
@@ -814,6 +1004,117 @@
             setTimeout(() => {
                 toast.remove();
             }, 5000);
+        }
+
+        function toggleGame(gameId) {
+            const gameCard = document.getElementById(`game-${gameId}`);
+            if (gameCard) {
+                gameCard.classList.toggle('collapsed');
+            }
+        }
+
+        function toggleInning(inningKey) {
+            const inningPlays = document.getElementById(`inning-${inningKey}`);
+            const inningHeader = inningPlays ? inningPlays.previousElementSibling : null;
+            
+            if (inningPlays && inningHeader) {
+                inningHeader.classList.toggle('collapsed');
+            }
+        }
+
+        function toggleAllGames() {
+            const gameCards = document.querySelectorAll('.game-card');
+            allGamesExpanded = !allGamesExpanded;
+            
+            gameCards.forEach(card => {
+                if (allGamesExpanded) {
+                    card.classList.remove('collapsed');
+                } else {
+                    card.classList.add('collapsed');
+                }
+            });
+            
+            const button = document.querySelector('.expand-all-btn');
+            button.textContent = allGamesExpanded ? '📋 Collapse All Games' : '📋 Expand All Games';
+        }
+
+        function toggleFilter(filterType) {
+            // Update active filter button
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            currentFilter = filterType;
+            filterPlays();
+        }
+
+        function filterPlays() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const playItems = document.querySelectorAll('.play-item');
+            
+            playItems.forEach(playItem => {
+                const playData = extractPlayData(playItem);
+                let shouldShow = true;
+                
+                // Apply current filter
+                switch (currentFilter) {
+                    case 'high-impact':
+                        shouldShow = playData.impactScore > 0.2;
+                        break;
+                    case 'recent':
+                        const playTime = new Date(playData.timestamp);
+                        const now = new Date();
+                        const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000);
+                        shouldShow = playTime > thirtyMinutesAgo;
+                        break;
+                    case 'hits':
+                        shouldShow = playData.event.toLowerCase().includes('single') ||
+                                   playData.event.toLowerCase().includes('double') ||
+                                   playData.event.toLowerCase().includes('triple') ||
+                                   playData.event.toLowerCase().includes('home run');
+                        break;
+                    case 'all':
+                    default:
+                        shouldShow = true;
+                        break;
+                }
+                
+                // Apply search filter
+                if (shouldShow && searchTerm) {
+                    shouldShow = playData.batter.toLowerCase().includes(searchTerm) ||
+                               playData.pitcher.toLowerCase().includes(searchTerm) ||
+                               playData.event.toLowerCase().includes(searchTerm) ||
+                               playData.description.toLowerCase().includes(searchTerm);
+                }
+                
+                playItem.style.display = shouldShow ? 'block' : 'none';
+            });
+            
+            // Update inning section visibility
+            updateInningVisibility();
+        }
+
+        function extractPlayData(playItem) {
+            return {
+                event: playItem.querySelector('.play-event').textContent,
+                description: playItem.querySelector('.play-description').textContent,
+                batter: playItem.querySelector('.detail-value').textContent,
+                pitcher: playItem.querySelectorAll('.detail-value')[5] ? playItem.querySelectorAll('.detail-value')[5].textContent : '',
+                impactScore: parseFloat(playItem.querySelector('.play-impact').textContent) / 100,
+                timestamp: new Date() // This would need to be properly extracted
+            };
+        }
+
+        function updateInningVisibility() {
+            const inningSections = document.querySelectorAll('.inning-section');
+            
+            inningSections.forEach(section => {
+                const visiblePlays = section.querySelectorAll('.play-item[style*="block"], .play-item:not([style*="none"])');
+                const hasVisiblePlays = Array.from(section.querySelectorAll('.play-item')).some(item => 
+                    !item.style.display || item.style.display !== 'none'
+                );
+                
+                section.style.display = hasVisiblePlays ? 'block' : 'none';
+            });
         }
     </script>
 </body>

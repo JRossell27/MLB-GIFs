@@ -148,19 +148,20 @@
 
         .games-grid {
             display: grid;
-            gap: 15px;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            margin-bottom: 20px;
         }
 
         .game-card {
             background: rgba(255,255,255,0.05);
             border-radius: 15px;
-            padding: 15px;
-            margin-bottom: 20px;
+            padding: 20px;
             border-left: 4px solid transparent;
             backdrop-filter: blur(10px);
             transition: all 0.3s ease;
             cursor: pointer;
+            min-height: 150px;
         }
 
         .game-card.collapsed .game-content {
@@ -187,275 +188,240 @@
 
         .game-card:hover {
             transform: translateY(-3px);
-            border-color: rgba(255,107,53,0.5);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
         }
 
         .game-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
 
-        .game-header h3 {
-            margin: 0;
-            font-size: 1.2em;
+        .game-teams {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            gap: 15px;
+        }
+
+        .team-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+        }
+
+        .team-name {
+            font-size: 1.3em;
+            font-weight: bold;
             color: #00ff88;
         }
 
-        .collapse-indicator {
+        .game-status {
+            font-size: 0.9em;
+            opacity: 0.7;
+        }
+
+        .game-score-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            flex: 1;
+        }
+
+        .score-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .score {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #ff6b35;
+        }
+
+        .inning {
+            font-size: 0.9em;
+            opacity: 0.7;
+        }
+
+        .venue-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .venue {
+            font-size: 0.8em;
+            opacity: 0.8;
+            text-align: center;
+        }
+
+        .start-time {
+            font-size: 0.7em;
+            opacity: 0.6;
+        }
+
+        .plays-summary {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            flex: 0 0 auto;
+        }
+
+        .plays-count {
+            font-size: 0.8em;
+            opacity: 0.7;
+        }
+
+        .plays-number {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #ff6b35;
+        }
+
+        .toggle-icon {
             font-size: 1.2em;
             transition: transform 0.3s ease;
         }
 
-        .game-card.collapsed .collapse-indicator {
-            transform: rotate(-90deg);
-        }
-
-        .inning-section {
-            margin-bottom: 15px;
-        }
-
-        .inning-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(255,255,255,0.1);
-            padding: 8px 12px;
-            border-radius: 8px;
-            margin-bottom: 8px;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
-
-        .inning-header:hover {
-            background: rgba(255,255,255,0.15);
-        }
-
-        .inning-title {
-            font-weight: bold;
-            color: #ff6b35;
-        }
-
-        .inning-count {
-            background: rgba(255, 107, 53, 0.3);
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 0.8em;
-        }
-
-        .inning-plays {
-            display: none;
-            padding-left: 15px;
-        }
-
-        .inning-section.expanded .inning-plays {
-            display: block;
-        }
-
-        .plays-grid {
-            display: grid;
-            gap: 10px;
-        }
-
-        .game-matchup {
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #ff6b35;
-        }
-
-        .game-score {
-            font-size: 1em;
-            background: rgba(255,255,255,0.1);
-            padding: 6px 12px;
-            border-radius: 10px;
-        }
-
-        .game-info {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .info-item {
-            text-align: center;
-            background: rgba(255,255,255,0.05);
-            padding: 10px;
-            border-radius: 8px;
-        }
-
-        .info-label {
-            font-size: 0.75em;
-            opacity: 0.7;
-            margin-bottom: 3px;
-        }
-
-        .info-value {
-            font-size: 0.9em;
-            font-weight: bold;
-            color: #00ff88;
-        }
-
-        .plays-section {
+        .game-content {
             margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.1);
         }
 
-        .plays-header {
+        .highlights-section {
+            margin-bottom: 20px;
+            background: rgba(255, 193, 7, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid rgba(255, 193, 7, 0.2);
+        }
+
+        .highlights-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 15px;
         }
 
-        .plays-title {
+        .highlights-title {
             font-size: 1.1em;
             font-weight: bold;
-            color: #ff6b35;
+            color: #ffc107;
         }
 
-        .plays-count {
-            background: linear-gradient(45deg, #6f42c1, #e83e8c);
-            color: white;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.8em;
-            font-weight: bold;
-        }
-
-        .plays-list {
-            max-height: 400px;
+        .highlights-list {
+            max-height: 300px;
             overflow-y: auto;
-            padding-right: 8px;
+            padding-right: 5px;
         }
 
-        .play-item {
-            background: rgba(255,255,255,0.05);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 12px;
-            border-left: 3px solid transparent;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .play-item:hover {
-            background: rgba(255,255,255,0.1);
-            border-left-color: #ff6b35;
-            transform: translateX(3px);
-        }
-
-        .play-item.high-impact {
-            border-left-color: #ff6b35;
-        }
-
-        .play-item.gif-created {
-            border-left-color: #28a745;
-            background: rgba(40, 167, 69, 0.1);
-        }
-
-        .play-item.gif-processing {
-            border-left-color: #ffc107;
-            background: rgba(255, 193, 7, 0.1);
-        }
-
-        .play-header {
+        .highlight-item {
+            background: rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-left: 3px solid #ffc107;
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
+            align-items: flex-start;
+            gap: 15px;
         }
 
-        .play-event {
+        .highlight-content {
+            flex-grow: 1;
+        }
+
+        .highlight-title {
             font-size: 1em;
             font-weight: bold;
-            color: #00ff88;
+            color: #ffc107;
+            margin-bottom: 6px;
+            line-height: 1.3;
         }
 
-        .play-impact {
-            background: linear-gradient(45deg, #6f42c1, #e83e8c);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 0.75em;
-            font-weight: bold;
-        }
-
-        .play-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-
-        .detail-item {
-            text-align: center;
-            background: rgba(255,255,255,0.05);
-            padding: 6px;
-            border-radius: 6px;
-        }
-
-        .detail-label {
-            font-size: 0.7em;
+        .highlight-details {
+            font-size: 0.85em;
             opacity: 0.7;
-            margin-bottom: 2px;
-        }
-
-        .detail-value {
-            font-size: 0.8em;
-            font-weight: bold;
-        }
-
-        .play-description {
-            background: rgba(0,0,0,0.3);
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 12px;
-            font-style: italic;
-            border-left: 3px solid #007bff;
-            font-size: 0.9em;
-        }
-
-        .play-actions {
             display: flex;
-            gap: 8px;
-            justify-content: flex-end;
+            justify-content: space-between;
+            margin-bottom: 6px;
         }
 
-        .btn-gif {
-            padding: 6px 12px;
-            font-size: 0.8em;
-            background: linear-gradient(45deg, #ff6b35, #f7931e);
+        .highlight-description {
+            font-size: 0.85em;
+            opacity: 0.8;
+            font-style: italic;
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+
+        .highlight-actions {
+            flex-shrink: 0;
+        }
+
+        .create-highlight-gif-btn {
+            background: linear-gradient(45deg, #ffc107, #ff6b35);
             color: white;
             border: none;
-            border-radius: 5px;
+            padding: 10px 15px;
+            border-radius: 8px;
             cursor: pointer;
+            font-size: 0.9em;
             transition: all 0.3s ease;
+            font-weight: bold;
+            white-space: nowrap;
         }
 
-        .btn-gif:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 3px 8px rgba(255, 107, 53, 0.4);
+        .create-highlight-gif-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(255, 193, 7, 0.4);
         }
 
-        .btn-gif:disabled {
+        .create-highlight-gif-btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
             transform: none;
         }
 
-        .loading {
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            border: 2px solid #ffffff40;
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
+        .load-highlights-btn {
+            background: linear-gradient(45deg, #ffc107, #ff6b35);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+            font-weight: bold;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .load-highlights-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
+        }
+
+        .load-highlights-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .no-highlights {
+            text-align: center;
+            padding: 20px;
+            opacity: 0.6;
+            font-style: italic;
+            color: #ffc107;
         }
 
         .no-games {
@@ -475,6 +441,27 @@
         .no-games p {
             opacity: 0.7;
             font-size: 1em;
+        }
+
+        .no-plays {
+            text-align: center;
+            padding: 20px;
+            opacity: 0.7;
+            font-style: italic;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #ffffff40;
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
         /* Scrollbar styling */
@@ -515,12 +502,22 @@
                 grid-template-columns: 1fr;
             }
 
-            .game-info {
-                grid-template-columns: repeat(2, 1fr);
+            .game-teams {
+                flex-direction: column;
+                gap: 10px;
             }
-
-            .play-details {
-                grid-template-columns: repeat(2, 1fr);
+            
+            .highlight-item {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .highlight-actions {
+                align-self: stretch;
+            }
+            
+            .create-highlight-gif-btn {
+                width: 100%;
             }
         }
 
@@ -620,257 +617,6 @@
         .control-button:hover {
             transform: translateY(-1px);
             box-shadow: 0 3px 8px rgba(111, 66, 193, 0.4);
-        }
-
-        .game-teams {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-        }
-
-        .team-info {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .team-name {
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #00ff88;
-        }
-
-        .game-status {
-            font-size: 0.8em;
-            opacity: 0.7;
-        }
-
-        .game-score-section {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .score-display {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .score {
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #ff6b35;
-        }
-
-        .inning {
-            font-size: 0.8em;
-            opacity: 0.7;
-        }
-
-        .venue-info {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2px;
-        }
-
-        .venue {
-            font-size: 0.8em;
-            opacity: 0.8;
-        }
-
-        .start-time {
-            font-size: 0.7em;
-            opacity: 0.6;
-        }
-
-        .plays-summary {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .plays-count {
-            font-size: 0.8em;
-            opacity: 0.7;
-        }
-
-        .plays-number {
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #ff6b35;
-        }
-
-        .toggle-icon {
-            font-size: 1.2em;
-            transition: transform 0.3s ease;
-        }
-
-        .details-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-
-        .create-gif-btn {
-            padding: 8px 16px;
-            font-size: 0.9em;
-            background: linear-gradient(45deg, #ff6b35, #f7931e);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: bold;
-        }
-
-        .create-gif-btn:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
-        }
-
-        .create-gif-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .no-plays {
-            text-align: center;
-            padding: 20px;
-            opacity: 0.7;
-            font-style: italic;
-        }
-
-        .highlights-section {
-            margin-bottom: 15px;
-            background: rgba(255, 193, 7, 0.1);
-            border-radius: 8px;
-            padding: 12px;
-        }
-
-        .highlights-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .highlights-title {
-            font-size: 1em;
-            font-weight: bold;
-            color: #ffc107;
-        }
-
-        .highlights-count {
-            background: linear-gradient(45deg, #ffc107, #ff6b35);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 0.8em;
-            font-weight: bold;
-        }
-
-        .highlights-list {
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .highlight-item {
-            background: rgba(255,255,255,0.05);
-            border-radius: 6px;
-            padding: 8px 10px;
-            margin-bottom: 6px;
-            border-left: 3px solid #ffc107;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .highlight-content {
-            flex-grow: 1;
-        }
-
-        .highlight-title {
-            font-size: 0.9em;
-            font-weight: bold;
-            color: #ffc107;
-            margin-bottom: 4px;
-        }
-
-        .highlight-details {
-            font-size: 0.8em;
-            opacity: 0.7;
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 4px;
-        }
-
-        .highlight-description {
-            font-size: 0.8em;
-            opacity: 0.8;
-            font-style: italic;
-            margin-top: 4px;
-        }
-
-        .highlight-actions {
-            margin-left: 15px;
-        }
-
-        .create-highlight-gif-btn {
-            background: linear-gradient(45deg, #ffc107, #ff6b35);
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.8em;
-            transition: all 0.3s ease;
-            font-weight: bold;
-        }
-
-        .create-highlight-gif-btn:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(255, 193, 7, 0.4);
-        }
-
-        .create-highlight-gif-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .no-highlights {
-            text-align: center;
-            padding: 15px;
-            opacity: 0.6;
-            font-style: italic;
-        }
-
-        .load-highlights-btn {
-            background: linear-gradient(45deg, #ffc107, #ff6b35);
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.8em;
-            transition: all 0.3s ease;
-        }
-
-        .load-highlights-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
-        }
-
-        .load-highlights-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
         }
     </style>
 </head>
@@ -1076,7 +822,8 @@
                 return;
             }
 
-            let html = '';
+            // Create the games grid container
+            let html = '<div class="games-grid">';
             
             games.forEach(game => {
                 const isExpanded = allGamesExpanded || expandedGames.has(game.game_id);
@@ -1098,23 +845,23 @@
                         <div class="game-header" onclick="toggleGame(${game.game_id})">
                             <div class="game-teams">
                                 <div class="team-info">
-                                    <span class="team-name">${game.away_team} @ ${game.home_team}</span>
-                                    <span class="game-status">${game.game_state || 'Unknown'}</span>
+                                    <div class="team-name">${game.away_team} @ ${game.home_team}</div>
+                                    <div class="game-status">${game.game_state || 'Unknown'}</div>
                                 </div>
                                 <div class="game-score-section">
                                     <div class="score-display">
-                                        <span class="score">${game.away_score || 0} - ${game.home_score || 0}</span>
-                                        <span class="inning">Inning ${game.inning || 'N/A'}</span>
+                                        <div class="score">${game.away_score || 0} - ${game.home_score || 0}</div>
+                                        <div class="inning">Inning ${game.inning || 'N/A'}</div>
                                     </div>
                                     <div class="venue-info">
-                                        <span class="venue">${game.venue || 'Unknown Venue'}</span>
-                                        <span class="start-time">${game.game_time ? formatGameTime(game.game_time) : 'TBD'}</span>
+                                        <div class="venue">${game.venue || 'Unknown Venue'}</div>
+                                        <div class="start-time">${game.game_time ? formatGameTime(game.game_time) : 'TBD'}</div>
                                     </div>
                                 </div>
                                 <div class="plays-summary">
-                                    <span class="plays-count">Plays</span>
-                                    <span class="plays-number">${playCount}</span>
-                                    <span class="toggle-icon">${isExpanded ? '▼' : '📅'}</span>
+                                    <div class="plays-count">Plays</div>
+                                    <div class="plays-number">${playCount}</div>
+                                    <div class="toggle-icon">${isExpanded ? '▼' : '📅'}</div>
                                 </div>
                             </div>
                         </div>
@@ -1139,28 +886,17 @@
                                     <span class="plays-count" style="opacity: 0.5;">Feature in development</span>
                                 </div>
                                 <div class="plays-list">
-                `;
-                
-                // Display plays directly (no complex grouping)
-                if (game.plays && game.plays.length > 0) {
-                    game.plays.forEach(play => {
-                        html += renderPlayItem(play, game.game_id);
-                    });
-                } else {
-                    html += `
-                        <div class="no-plays">
-                            <p>No plays available for this game yet.</p>
-                        </div>
-                    `;
-                }
-                
-                html += `
+                                    <div class="no-plays">
+                                        <p>Individual play GIF creation coming soon...</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 `;
             });
 
+            html += '</div>'; // Close games-grid
             container.innerHTML = html;
         }
 

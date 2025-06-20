@@ -117,10 +117,10 @@ class MLBHighlightGIFIntegration:
                 return None
             
             # Construct the correct video URL using fastball-clips pattern
-            # Try MP4 first, then HLS
+            # Try HLS first (more reliable), then MP4
             video_urls = [
-                f"https://fastball-clips.mlb.com/{game_id}/{target_team_path}/{play_uuid}.mp4",
-                f"https://fastball-clips.mlb.com/{game_id}/{target_team_path}/{play_uuid}.m3u8"
+                f"https://fastball-clips.mlb.com/{game_id}/{target_team_path}/{play_uuid}.m3u8",
+                f"https://fastball-clips.mlb.com/{game_id}/{target_team_path}/{play_uuid}.mp4"
             ]
             
             for video_url in video_urls:
@@ -299,72 +299,153 @@ class MLBHighlightGIFIntegration:
         try:
             logger.info(f"Downloading video from: {video_url}")
             
-            # Download the video
-            temp_video = self.temp_dir / f"temp_video_{int(time.time())}.mp4"
+            # Determine if this is an HLS stream or direct video
+            is_hls = video_url.endswith('.m3u8')
             
-            response = requests.get(video_url, stream=True, timeout=30)
-            response.raise_for_status()
-            
-            with open(temp_video, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
-            
-            logger.info(f"Downloaded video to: {temp_video}")
-            
-            # Check video file size
-            video_size = temp_video.stat().st_size / 1024 / 1024
-            logger.info(f"Video file size: {video_size:.1f}MB")
-            
-            # Parse highlight duration if provided
-            duration_seconds = None
-            if highlight_duration:
-                try:
-                    # Convert duration like "00:00:15" to seconds
-                    if ':' in highlight_duration:
-                        parts = highlight_duration.split(':')
-                        if len(parts) == 3:  # HH:MM:SS
-                            duration_seconds = int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
-                        elif len(parts) == 2:  # MM:SS
-                            duration_seconds = int(parts[0]) * 60 + int(parts[1])
-                    else:
-                        # Already in seconds
-                        duration_seconds = int(float(highlight_duration))
-                    
-                    logger.info(f"Using highlight duration: {duration_seconds} seconds")
-                except (ValueError, IndexError):
-                    logger.warning(f"Could not parse duration '{highlight_duration}', using full video")
-                    duration_seconds = None
-            
-            # Use simpler, faster conversion for memory-constrained environment
-            logger.info("Converting to GIF (using full highlight duration)...")
-            
-            gif_cmd = [
-                'ffmpeg',
-                '-i', str(temp_video),
-                '-vf', 'fps=15,scale=480:-1:flags=lanczos',  # Better quality: higher resolution and fps
-                '-loop', '0',  # Loop forever
-                '-y',  # Overwrite output
-                output_path
-            ]
-            
-            # Add duration limit only if we have one and it's reasonable (under 20 seconds)
-            if duration_seconds and duration_seconds <= 20:
-                gif_cmd.insert(3, '-t')
-                gif_cmd.insert(4, str(duration_seconds))
-                logger.info(f"Limiting GIF to {duration_seconds} seconds")
+            if is_hls:
+                # For HLS streams, use ffmpeg to download and convert directly
+                logger.info("Processing HLS stream directly with ffmpeg...")
+                
+                # Parse highlight duration if provided
+                duration_seconds = None
+                if highlight_duration:
+                    try:
+                        # Convert duration like "00:00:15" to seconds
+                        if ':' in highlight_duration:
+                            parts = highlight_duration.split(':')
+                            if len(parts) == 3:  # HH:MM:SS
+                                duration_seconds = int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
+                            elif len(parts) == 2:  # MM:SS
+                                duration_seconds = int(parts[0]) * 60 + int(parts[1])
+                        else:
+                            # Already in seconds
+                            duration_seconds = int(float(highlight_duration))
+                        
+                        logger.info(f"Using highlight duration: {duration_seconds} seconds")
+                    except (ValueError, IndexError):
+                        logger.warning(f"Could not parse duration '{highlight_duration}', using full video")
+                        duration_seconds = None
+                
+                # Build ffmpeg command for HLS input
+                gif_cmd = [
+                    'ffmpeg',
+                    '-i', video_url,
+                    '-vf', 'fps=15,scale=480:-1:flags=lanczos',
+                    '-loop', '0',
+                    '-y',
+                    output_path
+                ]
+                
+                # Add duration limit if specified
+                if duration_seconds and duration_seconds <= 20:
+                    gif_cmd.insert(3, '-t')
+                    gif_cmd.insert(4, str(duration_seconds))
+                    logger.info(f"Limiting GIF to {duration_seconds} seconds")
+                else:
+                    logger.info("Using full video duration (no time limit)")
+                
+                # Run ffmpeg with HLS input
+                result = subprocess.run(
+                    gif_cmd, 
+                    check=True, 
+                    capture_output=True, 
+                    text=True,
+                    timeout=90
+                )
+                
+                logger.info("HLS to GIF conversion completed successfully")
+                
             else:
-                logger.info("Using full video duration (no time limit)")
-            
-            # Run with timeout and capture output
-            result = subprocess.run(
-                gif_cmd, 
-                check=True, 
-                capture_output=True, 
-                text=True,
-                timeout=90  # Increased timeout for longer videos
-            )
-            
-            logger.info("GIF conversion completed successfully")
+                # For direct video files, download first then convert
+                temp_video = self.temp_dir / f"temp_video_{int(time.time())}.mp4"
+                
+                # Use proper headers for download
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                    'Referer': 'https://www.mlb.com/',
+                    'Accept': 'video/mp4,video/*;q=0.9,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.5',
+                    'Connection': 'keep-alive',
+                }
+                
+                response = requests.get(video_url, stream=True, timeout=30, headers=headers)
+                response.raise_for_status()
+                
+                with open(temp_video, 'wb') as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        f.write(chunk)
+                
+                logger.info(f"Downloaded video to: {temp_video}")
+                
+                # Check video file size and validate
+                video_size = temp_video.stat().st_size / 1024 / 1024
+                logger.info(f"Video file size: {video_size:.1f}MB")
+                
+                if video_size < 0.1:  # Less than 100KB is suspicious
+                    logger.error(f"Video file too small ({video_size:.1f}MB), likely corrupted")
+                    return False
+                
+                # Validate video file with ffprobe
+                try:
+                    probe_cmd = ['ffprobe', '-v', 'quiet', '-print_format', 'json', '-show_format', str(temp_video)]
+                    probe_result = subprocess.run(probe_cmd, capture_output=True, text=True, timeout=10)
+                    if probe_result.returncode != 0:
+                        logger.error("Video file validation failed - file appears corrupted")
+                        return False
+                    logger.info("Video file validation passed")
+                except Exception as e:
+                    logger.warning(f"Could not validate video file: {e}")
+                
+                # Parse highlight duration if provided
+                duration_seconds = None
+                if highlight_duration:
+                    try:
+                        # Convert duration like "00:00:15" to seconds
+                        if ':' in highlight_duration:
+                            parts = highlight_duration.split(':')
+                            if len(parts) == 3:  # HH:MM:SS
+                                duration_seconds = int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
+                            elif len(parts) == 2:  # MM:SS
+                                duration_seconds = int(parts[0]) * 60 + int(parts[1])
+                        else:
+                            # Already in seconds
+                            duration_seconds = int(float(highlight_duration))
+                        
+                        logger.info(f"Using highlight duration: {duration_seconds} seconds")
+                    except (ValueError, IndexError):
+                        logger.warning(f"Could not parse duration '{highlight_duration}', using full video")
+                        duration_seconds = None
+                
+                # Convert to GIF
+                logger.info("Converting to GIF (using full highlight duration)...")
+                
+                gif_cmd = [
+                    'ffmpeg',
+                    '-i', str(temp_video),
+                    '-vf', 'fps=15,scale=480:-1:flags=lanczos',
+                    '-loop', '0',
+                    '-y',
+                    output_path
+                ]
+                
+                # Add duration limit only if we have one and it's reasonable (under 20 seconds)
+                if duration_seconds and duration_seconds <= 20:
+                    gif_cmd.insert(3, '-t')
+                    gif_cmd.insert(4, str(duration_seconds))
+                    logger.info(f"Limiting GIF to {duration_seconds} seconds")
+                else:
+                    logger.info("Using full video duration (no time limit)")
+                
+                # Run with timeout and capture output
+                result = subprocess.run(
+                    gif_cmd, 
+                    check=True, 
+                    capture_output=True, 
+                    text=True,
+                    timeout=90
+                )
+                
+                logger.info("GIF conversion completed successfully")
             
             # Check if output file was created
             if not Path(output_path).exists():
@@ -379,9 +460,10 @@ class MLBHighlightGIFIntegration:
                 logger.warning(f"GIF too large: {file_size_mb:.1f}MB, trying with shorter duration...")
                 
                 # Try again with 10 second limit
+                input_source = video_url if is_hls else str(temp_video)
                 smaller_cmd = [
                     'ffmpeg',
-                    '-i', str(temp_video),
+                    '-i', input_source,
                     '-t', '10',  # 10 second fallback
                     '-vf', 'fps=12,scale=400:-1:flags=lanczos',  # Smaller fallback
                     '-loop', '0',

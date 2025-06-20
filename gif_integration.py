@@ -82,11 +82,13 @@ class BaseballSavantGIFIntegration:
             return None
     
     def get_statcast_data_for_play(self, game_id: int, play_id: int, game_date: str, mlb_play_data: Dict = None) -> Optional[Dict]:
-        """Get Statcast data for a specific play"""
+        """Get Statcast data for a specific play - using exact same method as working Impact Players system"""
         try:
-            # Extract year from game_date 
+            # Extract year from game_date for the season parameter
             year = game_date.split('-')[0]
+            logger.info(f"Fetching Statcast data for game {game_id} on {game_date} (season {year})")
             
+            # Use EXACT same parameters as the working Impact Players system
             params = {
                 'all': 'true',
                 'hfPT': '',
@@ -97,9 +99,9 @@ class BaseballSavantGIFIntegration:
                 'stadium': '',
                 'hfBBL': '',
                 'hfNewZones': '',
-                'hfGT': 'R|',
+                'hfGT': 'R|',  # Regular season
                 'hfC': '',
-                'hfSea': f'{year}|',  # Use dynamic year instead of hardcoded 2025
+                'hfSea': f'{year}|',  # Current season
                 'hfSit': '',
                 'player_type': 'batter',
                 'hfOuts': '',
@@ -115,7 +117,7 @@ class BaseballSavantGIFIntegration:
                 'hfOutfield': '',
                 'hfRO': '',
                 'home_road': '',
-                'game_pk': game_id,
+                'game_pk': game_id,  # CRUCIAL: This filters to the specific game
                 'hfFlag': '',
                 'hfPull': '',
                 'metric_1': '',
@@ -130,62 +132,75 @@ class BaseballSavantGIFIntegration:
                 'type': 'details',
             }
             
+            # Use the CSV export endpoint for easier parsing
             url = f"{self.savant_base}/statcast_search/csv"
-            logger.info(f"Fetching Statcast data for game {game_id}, year {year}")
             response = requests.get(url, params=params, timeout=30)
             response.raise_for_status()
             
             # Parse CSV data
             csv_reader = csv.DictReader(StringIO(response.text))
-            plays_with_events = [row for row in csv_reader if row.get('events')]
             
-            logger.info(f"Found {len(plays_with_events)} Statcast plays for game {game_id}")
+            # Get all plays with events (not just pitches)
+            plays_with_events = []
+            for row in csv_reader:
+                if row.get('events'):  # Only rows with actual events
+                    plays_with_events.append(row)
             
-            if not plays_with_events:
-                logger.warning(f"No Statcast data available for game {game_id} on {game_date}")
-                return None
+            logger.info(f"Found {len(plays_with_events)} Statcast plays with events for game {game_id}")
             
-            # If we have MLB play data, try to match it
+            # If we have MLB play data to match against, try to find the exact play
             if mlb_play_data:
                 target_event = mlb_play_data.get('result', {}).get('event', '').lower()
                 target_inning = mlb_play_data.get('about', {}).get('inning')
-                target_batter = mlb_play_data.get('matchup', {}).get('batter', {}).get('fullName', '')
+                target_batter = mlb_play_data.get('matchup', {}).get('batter', {}).get('id')
+                target_batter_name = mlb_play_data.get('matchup', {}).get('batter', {}).get('fullName', '')
                 
-                logger.info(f"Looking for play: {target_event} in inning {target_inning} by {target_batter}")
+                logger.info(f"Looking for play: {target_event} in inning {target_inning} by {target_batter_name}")
                 
-                # Try to find exact match by event and inning
+                # Try to find exact match by event type and inning
                 for play in plays_with_events:
                     event = play.get('events', '').lower()
                     inning = play.get('inning')
+                    batter_id = play.get('batter')
                     
+                    # Match by event type and inning
                     if (target_event in event or event in target_event) and str(inning) == str(target_inning):
-                        logger.info(f"Found exact Statcast match for {target_event} in inning {target_inning}")
+                        logger.info(f"Found matching Statcast play: {event} in inning {inning}")
                         return play
                 
-                # Fallback to event type match
+                # If no exact match, try just by event type
                 for play in plays_with_events:
                     event = play.get('events', '').lower()
                     if target_event in event or event in target_event:
-                        logger.info(f"Found event match for {target_event}")
+                        logger.info(f"Found Statcast play by event type: {event}")
                         return play
             
-            # Return the most interesting play for video potential
+            # Fallback: prioritize visually interesting plays
             for play in plays_with_events:
                 event = play.get('events', '').lower()
+                # Prioritize visually interesting plays
                 if any(keyword in event for keyword in ['home_run', 'double', 'triple', 'single']):
                     logger.info(f"Found interesting Statcast play: {event}")
                     return play
             
-            logger.info(f"Returning first available Statcast play")
-            return plays_with_events[0]
+            # If no interesting plays, return the first play with events
+            if plays_with_events:
+                logger.info(f"Returning first available Statcast play: {plays_with_events[0].get('events')}")
+                return plays_with_events[0]
+            
+            logger.warning(f"No Statcast plays with events found for game {game_id}")
+            return None
             
         except Exception as e:
             logger.error(f"Error fetching Statcast data: {e}")
             return None
     
     def get_play_animation_url(self, game_id: int, play_id: int, statcast_data: Dict, mlb_play_data: Dict = None) -> Optional[str]:
-        """Get the animation URL for a specific play from Baseball Savant"""
+        """Get the animation URL for a specific play from Baseball Savant - using exact same method as working system"""
         try:
+            # We need to get the play UUID from the Baseball Savant /gf endpoint
+            # since the Statcast CSV doesn't include it
+            
             logger.info(f"Getting play UUID for game {game_id}, play {play_id}")
             
             # Get game data from Baseball Savant /gf endpoint
@@ -203,15 +218,11 @@ class BaseballSavantGIFIntegration:
             all_plays.extend(gf_data.get('team_home', []))
             all_plays.extend(gf_data.get('team_away', []))
             
-            logger.info(f"Found {len(all_plays)} total plays in game data")
+            logger.info(f"Found {len(all_plays)} total plays in Baseball Savant game data")
             
             # DEBUG: Log sample of available plays
             contact_plays = [p for p in all_plays if p.get('pitch_call') == 'hit_into_play' and p.get('play_id')]
             logger.info(f"Found {len(contact_plays)} contact plays with UUIDs")
-            
-            # Log some examples of what's available
-            for i, play in enumerate(contact_plays[:3]):
-                logger.info(f"Sample contact play {i+1}: {play.get('batter_name')} - {play.get('events')} - UUID: {play.get('play_id')}")
             
             # Find the matching play using MLB API data if available
             target_play_uuid = None
@@ -232,55 +243,49 @@ class BaseballSavantGIFIntegration:
                     play_batter = play.get('batter_name', '')
                     play_uuid = play.get('play_id')
                     
-                    # Must have a play UUID to be useful
-                    if not play_uuid:
-                        continue
-                    
-                    # Must match inning
-                    if str(play_inning) != str(target_inning):
-                        continue
-                    
-                    # Check if batter matches (more lenient matching)
-                    batter_last_name = target_batter.split()[-1].lower() if target_batter else ""
-                    play_batter_lower = play_batter.lower()
-                    batter_match = (batter_last_name in play_batter_lower or 
-                                  any(name.lower() in play_batter_lower for name in target_batter.split()))
-                    
-                    if batter_match:
-                        # Score this match based on how well it matches the event
-                        score = 0
+                    # Must match inning and have a play UUID
+                    if str(play_inning) == str(target_inning) and play_uuid:
+                        # Check if batter matches - more flexible matching
+                        batter_last_name = target_batter.split()[-1].lower() if target_batter else ""
+                        play_batter_lower = play_batter.lower()
+                        batter_match = (batter_last_name in play_batter_lower or 
+                                      any(name.lower() in play_batter_lower for name in target_batter.split()))
                         
-                        # HIGHEST PRIORITY: This is the actual contact pitch (not just a pitch in the at-bat)
-                        pitch_call = play.get('pitch_call', '')
-                        call = play.get('call', '')
-                        if pitch_call == 'hit_into_play' or call == 'X':
-                            score += 1000  # Heavily prioritize the contact pitch
-                        
-                        # High priority: event description contains the target event
-                        if target_event in play_description or target_event.replace(' ', '') in play_description.replace(' ', ''):
-                            score += 100
-                        
-                        # Medium priority: events field contains the target event  
-                        if target_event in play_event or target_event.replace(' ', '') in play_event.replace(' ', ''):
-                            score += 50
-                        
-                        # For home runs, look for specific indicators
-                        if 'home' in target_event and 'run' in target_event:
-                            if 'homer' in play_description or 'home run' in play_description:
+                        if batter_match:
+                            # Score this match based on how well it matches the event
+                            score = 0
+                            
+                            # HIGHEST PRIORITY: This is the actual contact pitch (not just a pitch in the at-bat)
+                            pitch_call = play.get('pitch_call', '')
+                            call = play.get('call', '')
+                            if pitch_call == 'hit_into_play' or call == 'X':
+                                score += 1000  # Heavily prioritize the contact pitch
+                            
+                            # High priority: event description contains the target event
+                            if target_event in play_description or target_event.replace(' ', '') in play_description.replace(' ', ''):
                                 score += 100
-                            if 'homer' in play_event or 'home run' in play_event:
+                            
+                            # Medium priority: events field contains the target event  
+                            if target_event in play_event or target_event.replace(' ', '') in play_event.replace(' ', ''):
                                 score += 50
                             
-                            # Additional bonus for hit data which confirms this was the contact pitch
-                            if play.get('hit_speed') or play.get('hit_distance'):
-                                score += 500
-                        
-                        # Bonus for exact event match
-                        if play_event.strip() == target_event.strip():
-                            score += 200
-                        
-                        best_matches.append((score, play, play_uuid))
-                        logger.info(f"Found potential match (score {score}): {play_batter} - {play_event} - pitch_call: {pitch_call}")
+                            # For home runs, look for specific indicators
+                            if 'home' in target_event and 'run' in target_event:
+                                if 'homer' in play_description or 'home run' in play_description:
+                                    score += 100
+                                if 'homer' in play_event or 'home run' in play_event:
+                                    score += 50
+                                
+                                # Additional bonus for hit data which confirms this was the contact pitch
+                                if play.get('hit_speed') or play.get('hit_distance'):
+                                    score += 500
+                            
+                            # Bonus for exact event match
+                            if play_event.strip() == target_event.strip():
+                                score += 200
+                            
+                            best_matches.append((score, play, play_uuid))
+                            logger.info(f"Found potential match (score {score}): {play_batter} - {play_event} - pitch_call: {pitch_call}")
                 
                 # Sort by score and take the best match
                 if best_matches:
@@ -292,9 +297,9 @@ class BaseballSavantGIFIntegration:
                 else:
                     logger.warning(f"No exact matches found for {target_batter} {target_event} in inning {target_inning}")
             
-            # Fallback: look for ANY interesting contact plays if no exact match
+            # Fallback: look for interesting plays if no exact match
             if not target_play_uuid:
-                logger.info("No exact match found, looking for ANY interesting contact plays...")
+                logger.info("No exact match found, looking for interesting plays...")
                 for play in all_plays:
                     play_event = play.get('events', '').lower()
                     play_uuid = play.get('play_id')
@@ -302,7 +307,7 @@ class BaseballSavantGIFIntegration:
                     
                     # Only consider plays that are actual contact pitches with interesting events
                     if (play_uuid and pitch_call == 'hit_into_play' and 
-                        any(keyword in play_event for keyword in ['home_run', 'double', 'triple', 'single'])):
+                        any(keyword in play_event for keyword in ['home_run', 'double', 'triple'])):
                         logger.info(f"Found interesting contact play: {play_event}")
                         target_play_uuid = play_uuid
                         break
@@ -320,7 +325,7 @@ class BaseballSavantGIFIntegration:
                         break
             
             if not target_play_uuid:
-                logger.error("No suitable play with UUID found - this should be rare!")
+                logger.error("No suitable play with UUID found!")
                 # DEBUG: Log what we actually have
                 all_uuids = [p.get('play_id') for p in all_plays if p.get('play_id')]
                 logger.info(f"Available UUIDs in game: {len(all_uuids)} total")
@@ -340,7 +345,7 @@ class BaseballSavantGIFIntegration:
                 if 'sporty-clips.mlb.com' in html_content:
                     logger.info("✅ Found sporty-clips URLs in HTML")
                 else:
-                    logger.warning("❌ No sporty-clips URLs found in HTML - page might be different")
+                    logger.warning("❌ No sporty-clips URLs found in HTML")
                 
                 # Extract the actual video URL from the HTML using multiple patterns
                 video_url_patterns = [

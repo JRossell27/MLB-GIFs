@@ -270,11 +270,93 @@
         }
 
         .plays-summary {
+            text-align: center;
             display: flex;
             flex-direction: column;
             align-items: center;
+            gap: 5px;
+            min-width: 80px;
+        }
+
+        .savant-indicator {
+            font-size: 0.75em;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+            font-weight: bold;
+            border: 1px solid rgba(40, 167, 69, 0.3);
+        }
+
+        .savant-indicator.unavailable {
+            background: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+            border: 1px solid rgba(220, 53, 69, 0.3);
+        }
+
+        .savant-info {
+            background: rgba(40, 167, 69, 0.1);
+            border-left: 3px solid #28a745;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+        }
+
+        .savant-info.unavailable {
+            background: rgba(220, 53, 69, 0.1);
+            border-left-color: #dc3545;
+        }
+
+        .savant-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .savant-title {
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .savant-stats {
+            font-size: 0.8em;
+            opacity: 0.8;
+        }
+
+        .savant-note {
+            font-size: 0.8em;
+            opacity: 0.7;
+            font-style: italic;
+        }
+
+        .play-video-indicator {
+            display: inline-flex;
+            align-items: center;
             gap: 4px;
-            flex: 0 0 auto;
+            font-size: 0.75em;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .play-video-indicator.savant-available {
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+            border: 1px solid rgba(40, 167, 69, 0.3);
+        }
+
+        .play-video-indicator.highlight-only {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+            border: 1px solid rgba(255, 193, 7, 0.3);
+        }
+
+        .play-video-indicator.no-video {
+            background: rgba(108, 117, 125, 0.2);
+            color: #6c757d;
+            border: 1px solid rgba(108, 117, 125, 0.3);
         }
 
         .plays-count {
@@ -618,6 +700,28 @@
             transform: translateY(-1px);
             box-shadow: 0 3px 8px rgba(111, 66, 193, 0.4);
         }
+
+        .play-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .play-event-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .play-event {
+            font-weight: bold;
+            font-size: 1em;
+            color: #ff6b35;
+        }
     </style>
 </head>
 <body>
@@ -861,34 +965,55 @@
                                 <div class="plays-summary">
                                     <div class="plays-count">Plays</div>
                                     <div class="plays-number">${playCount}</div>
+                                    ${game.baseball_savant && game.baseball_savant.available ? 
+                                        `<div class="savant-indicator" title="Baseball Savant: ${game.baseball_savant.plays_with_video}/${game.baseball_savant.total_plays} plays with video">⚾ ${Math.round(game.baseball_savant.coverage_percent)}%</div>` :
+                                        `<div class="savant-indicator unavailable" title="Baseball Savant: No video data">❌ No Video</div>`
+                                    }
                                     <div class="toggle-icon">${isExpanded ? '▼' : '📅'}</div>
                                 </div>
                             </div>
                         </div>
                         
                         <div class="game-content" style="display: ${isExpanded ? 'block' : 'none'};">
+                            <!-- Baseball Savant Video Info -->
+                            ${game.baseball_savant && game.baseball_savant.available ? `
+                                <div class="savant-info">
+                                    <div class="savant-header">
+                                        <span class="savant-title">⚾ Baseball Savant Video Coverage</span>
+                                        <span class="savant-stats">${game.baseball_savant.plays_with_video}/${game.baseball_savant.total_plays} plays (${Math.round(game.baseball_savant.coverage_percent)}%)</span>
+                                    </div>
+                                </div>
+                            ` : `
+                                <div class="savant-info unavailable">
+                                    <div class="savant-header">
+                                        <span class="savant-title">❌ Baseball Savant: No Video Data Available</span>
+                                        <span class="savant-note">Individual play videos not available - use highlights below</span>
+                                    </div>
+                                </div>
+                            `}
+                            
+                            <!-- Individual Plays Section -->
+                            <div class="plays-section">
+                                <div class="plays-header">
+                                    <span class="plays-title">🎯 Individual Plays ${game.baseball_savant && game.baseball_savant.available ? '(Baseball Savant + MLB Highlights)' : '(MLB Highlights Only)'}</span>
+                                    <span class="plays-count">${playCount} plays available</span>
+                                </div>
+                                <div class="plays-list">
+                                    ${playCount > 0 ? renderAllPlays(game.plays, game.game_id, game.baseball_savant) : 
+                                        '<div class="no-plays"><p>No plays available yet</p></div>'}
+                                </div>
+                            </div>
+                            
+                            <!-- Highlights Section (Alternative/Backup) -->
                             <div class="highlights-section">
                                 <div class="highlights-header">
-                                    <span class="highlights-title">📺 Available Highlights (Create GIFs Here)</span>
+                                    <span class="highlights-title">📺 Game Highlights (Backup Method)</span>
                                     <button class="load-highlights-btn" onclick="loadHighlights(${game.game_id})">
                                         Load Highlights
                                     </button>
                                 </div>
                                 <div id="highlights-${game.game_id}" class="highlights-list">
-                                    <div class="no-highlights">Click "Load Highlights" to see available video content and create GIFs</div>
-                                </div>
-                            </div>
-                            
-                            <!-- Keep plays section but hide it for now -->
-                            <div class="plays-section" style="display: none;">
-                                <div class="plays-header">
-                                    <span class="plays-title">Individual Plays (Coming Soon)</span>
-                                    <span class="plays-count" style="opacity: 0.5;">Feature in development</span>
-                                </div>
-                                <div class="plays-list">
-                                    <div class="no-plays">
-                                        <p>Individual play GIF creation coming soon...</p>
-                                    </div>
+                                    <div class="no-highlights">Click "Load Highlights" to see compiled video highlights</div>
                                 </div>
                             </div>
                         </div>
@@ -954,6 +1079,95 @@
                     </div>
                 </div>
             `;
+        }
+
+        function renderAllPlays(plays, gameId, savantInfo) {
+            if (!plays || plays.length === 0) {
+                return '<div class="no-plays"><p>No plays available</p></div>';
+            }
+
+            let html = '';
+            plays.forEach(play => {
+                const impactClass = play.impact_score > 0.5 ? 'high-impact' : '';
+                const gifClass = play.gif_created ? 'gif-created' : (play.gif_processing ? 'gif-processing' : '');
+                
+                // Format inning display properly
+                const inning = play.inning || 'Unknown';
+                const halfInning = play.half_inning || '';
+                const inningDisplay = halfInning ? `${inning}${halfInning.charAt(0).toUpperCase()}` : `${inning}`;
+                
+                // Determine video availability based on actual play data
+                let videoIndicator = '';
+                const videoAvailability = play.video_availability || 'unknown';
+                
+                if (videoAvailability === 'savant-available') {
+                    videoIndicator = '<span class="play-video-indicator savant-available">⚾ Savant Video</span>';
+                } else if (videoAvailability === 'savant-unavailable' || videoAvailability === 'savant-unknown') {
+                    videoIndicator = '<span class="play-video-indicator highlight-only">📺 Highlight Only</span>';
+                } else if (videoAvailability === 'highlight-only') {
+                    videoIndicator = '<span class="play-video-indicator highlight-only">📺 Highlight Only</span>';
+                } else if (videoAvailability === 'no-savant') {
+                    videoIndicator = '<span class="play-video-indicator no-video">❌ No Savant</span>';
+                } else {
+                    // Fallback to old logic for compatibility
+                    if (savantInfo && savantInfo.available && savantInfo.coverage_percent > 50) {
+                        videoIndicator = '<span class="play-video-indicator savant-available">⚾ Savant Video</span>';
+                    } else {
+                        videoIndicator = '<span class="play-video-indicator highlight-only">📺 Highlight Only</span>';
+                    }
+                }
+                
+                html += `
+                    <div class="play-item ${impactClass} ${gifClass}">
+                        <div class="play-header">
+                            <div class="play-event-section">
+                                <span class="play-event">${play.event || 'Unknown Event'}</span>
+                                ${videoIndicator}
+                            </div>
+                            <span class="play-impact">WPA: ${play.wpa ? play.wpa.toFixed(3) : 'N/A'}</span>
+                        </div>
+                        <div class="play-description">${play.description || 'No description available'}</div>
+                        <div class="play-details">
+                            <div class="details-grid">
+                                <div class="detail-item">
+                                    <div class="detail-label">Inning</div>
+                                    <div class="detail-value">${inningDisplay}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Outs</div>
+                                    <div class="detail-value">${play.outs || 0}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Batter</div>
+                                    <div class="detail-value">${play.batter || 'Unknown'}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Pitcher</div>
+                                    <div class="detail-value">${play.pitcher || 'Unknown'}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Impact</div>
+                                    <div class="detail-value">${play.impact_score ? play.impact_score.toFixed(2) : 'N/A'}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Score</div>
+                                    <div class="detail-value">${play.away_score || 0} - ${play.home_score || 0}</div>
+                                </div>
+                            </div>
+                            <div class="play-actions">
+                                <button class="create-gif-btn" 
+                                        onclick="createGif('${play.play_id}')"
+                                        ${play.gif_created || play.gif_processing ? 'disabled' : ''}>
+                                    ${play.gif_processing ? '⏳ Processing...' : 
+                                      play.gif_created ? '✅ GIF Created' : '🎬 Create GIF'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            return html;
         }
 
         function getStatusClass(status) {

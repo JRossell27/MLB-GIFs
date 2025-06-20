@@ -571,6 +571,104 @@ class ManualGIFDashboard:
             logger.error(f"Error fetching highlights for game {game_id}: {e}")
             return []
 
+    def check_baseball_savant_availability(self, game_id: int) -> Dict:
+        """Check if Baseball Savant has video data for this game"""
+        try:
+            logger.info(f"Checking Baseball Savant availability for game {game_id}")
+            
+            # Use the new hybrid integration to check Baseball Savant
+            savant_url = f"https://baseballsavant.mlb.com/gf?game_pk={game_id}"
+            response = requests.get(savant_url, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                home_plays = data.get('team_home', [])
+                away_plays = data.get('team_away', [])
+                
+                # Count plays with UUIDs (video potential)
+                plays_with_video = 0
+                total_plays = len(home_plays) + len(away_plays)
+                play_uuids = {}  # Store play UUIDs for individual checking
+                
+                for play in home_plays + away_plays:
+                    play_uuid = play.get('play_id')
+                    if play_uuid:
+                        plays_with_video += 1
+                        # Store UUID with play info for later reference
+                        play_key = f"{play.get('inning', 0)}_{play.get('batter_name', 'unknown')}"
+                        play_uuids[play_key] = play_uuid
+                
+                logger.info(f"Baseball Savant: {plays_with_video}/{total_plays} plays with video potential")
+                
+                return {
+                    'available': True,
+                    'total_plays': total_plays,
+                    'plays_with_video': plays_with_video,
+                    'coverage_percent': (plays_with_video / total_plays * 100) if total_plays > 0 else 0,
+                    'play_uuids': play_uuids  # Store for individual play checking
+                }
+            else:
+                logger.warning(f"Baseball Savant not available for game {game_id}: {response.status_code}")
+                return {
+                    'available': False,
+                    'total_plays': 0,
+                    'plays_with_video': 0,
+                    'coverage_percent': 0,
+                    'play_uuids': {}
+                }
+                
+        except Exception as e:
+            logger.error(f"Error checking Baseball Savant for game {game_id}: {e}")
+            return {
+                'available': False,
+                'total_plays': 0,
+                'plays_with_video': 0,
+                'coverage_percent': 0,
+                'play_uuids': {}
+            }
+
+    def check_individual_play_video(self, game_id: int, play_info: Dict, savant_data: Dict = None) -> str:
+        """Check if a specific play has video available from Baseball Savant"""
+        try:
+            if not savant_data or not savant_data.get('available'):
+                return 'no-savant'  # No Baseball Savant data for this game
+            
+            # Try to match this play with a Baseball Savant UUID
+            play_batter = play_info.get('batter', '')
+            play_inning = play_info.get('inning', 0)
+            play_event = play_info.get('event', '')
+            
+            # Create a key to match against stored UUIDs
+            batter_last_name = play_batter.split()[-1] if play_batter else 'unknown'
+            play_key = f"{play_inning}_{batter_last_name.lower()}"
+            
+            play_uuids = savant_data.get('play_uuids', {})
+            
+            # Look for exact match or similar matches
+            matched_uuid = None
+            for stored_key, uuid in play_uuids.items():
+                if play_key in stored_key or stored_key in play_key:
+                    matched_uuid = uuid
+                    break
+            
+            if matched_uuid:
+                # Quick test if the video URL is accessible
+                try:
+                    video_url = f"https://baseballsavant.mlb.com/sporty-videos?playId={matched_uuid}"
+                    response = requests.head(video_url, timeout=5)
+                    if response.status_code == 200:
+                        return 'savant-available'  # Baseball Savant video available
+                    else:
+                        return 'savant-unavailable'  # UUID exists but video not accessible
+                except:
+                    return 'savant-unknown'  # UUID exists but couldn't test
+            else:
+                return 'highlight-only'  # No Baseball Savant UUID, will use highlights
+                
+        except Exception as e:
+            logger.error(f"Error checking individual play video: {e}")
+            return 'unknown'
+
 # Global dashboard instance
 dashboard = ManualGIFDashboard()
 
@@ -582,7 +680,7 @@ def index():
 
 @app.route('/api/games')
 def api_games():
-    """Get all games with their plays"""
+    """Get all games with their plays and video availability info"""
     games_data = []
     scheduled_count = 0
     live_count = 0
@@ -593,6 +691,19 @@ def api_games():
         game_dict = game.to_dict()
         # Sort plays by timestamp (newest first)
         game_dict['plays'].sort(key=lambda x: x['timestamp'], reverse=True)
+        
+        # Add Baseball Savant availability info
+        savant_info = dashboard.check_baseball_savant_availability(game.game_id)
+        game_dict['baseball_savant'] = savant_info
+        
+        # Add individual play video availability
+        for play in game_dict['plays']:
+            play_video_status = dashboard.check_individual_play_video(
+                game.game_id, 
+                play, 
+                savant_info
+            )
+            play['video_availability'] = play_video_status
         
         # Categorize games for sorting with more granular categories
         game_state = game_dict['game_state'].lower()

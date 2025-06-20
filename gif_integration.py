@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 MLB Highlight GIF Integration for Manual Dashboard
-Creates ONLY real video GIFs using MLB-StatsAPI highlight videos
+Creates ONLY real video GIFs using Baseball Savant individual play videos (primary) 
+and MLB-StatsAPI highlight videos (fallback)
 Optimized for 512MB RAM - creates, sends, and deletes GIFs immediately
 """
 
@@ -15,6 +16,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 import sys
+import re
+import json
 
 # Import statsapi
 try:
@@ -35,9 +38,150 @@ class MLBHighlightGIFIntegration:
     def __init__(self):
         self.temp_dir = Path(tempfile.gettempdir()) / "mlb_gifs"
         self.temp_dir.mkdir(exist_ok=True)
-        
+        self.savant_base = "https://baseballsavant.mlb.com"
+    
+    def get_baseball_savant_play_video(self, game_id: int, play_id: int, mlb_play_data: Dict = None) -> Optional[str]:
+        """Get individual play video from Baseball Savant using /gf endpoint and play UUIDs"""
+        try:
+            logger.info(f"Trying Baseball Savant individual play video for game {game_id}, play {play_id}")
+            
+            # Step 1: Get play UUID from Baseball Savant /gf endpoint
+            gf_url = f"{self.savant_base}/gf?game_pk={game_id}"
+            logger.info(f"Fetching play data from: {gf_url}")
+            
+            gf_response = requests.get(gf_url, timeout=15)
+            if gf_response.status_code != 200:
+                logger.warning(f"Baseball Savant /gf endpoint failed: {gf_response.status_code}")
+                return None
+            
+            gf_data = gf_response.json()
+            
+            # Look in both home and away team plays
+            all_plays = []
+            all_plays.extend(gf_data.get('team_home', []))
+            all_plays.extend(gf_data.get('team_away', []))
+            
+            logger.info(f"Found {len(all_plays)} total plays in Baseball Savant game data")
+            
+            # Step 2: Find matching play UUID
+            target_play_uuid = None
+            
+            if mlb_play_data:
+                target_event = mlb_play_data.get('result', {}).get('event', '').lower()
+                target_inning = mlb_play_data.get('about', {}).get('inning')
+                target_batter = mlb_play_data.get('matchup', {}).get('batter', {}).get('fullName', '')
+                
+                logger.info(f"Looking for {target_batter} {target_event} in inning {target_inning}")
+                
+                # Find best matching play
+                best_matches = []
+                for play in all_plays:
+                    play_event = play.get('events', '').lower()
+                    play_description = play.get('des', '').lower()
+                    play_inning = play.get('inning')
+                    play_batter = play.get('batter_name', '')
+                    play_uuid = play.get('play_id')
+                    
+                    # Must match inning and have a play UUID
+                    if str(play_inning) == str(target_inning) and play_uuid:
+                        score = 0
+                        
+                        # Batter name match
+                        if target_batter and (target_batter.split()[-1].lower() in play_batter.lower() or 
+                                            play_batter.split()[-1].lower() in target_batter.lower()):
+                            score += 100
+                        
+                        # This is the actual contact pitch (highest priority)
+                        pitch_call = play.get('pitch_call', '')
+                        call = play.get('call', '')
+                        if pitch_call == 'hit_into_play' or call == 'X':
+                            score += 1000
+                        
+                        # Event description match
+                        if target_event in play_description or target_event.replace(' ', '') in play_description.replace(' ', ''):
+                            score += 200
+                        
+                        if score > 0:
+                            best_matches.append((score, play_uuid, play))
+                            logger.debug(f"Play match score {score}: {play_batter} - {play_description[:50]}")
+                
+                if best_matches:
+                    best_matches.sort(key=lambda x: x[0], reverse=True)
+                    target_play_uuid = best_matches[0][1]
+                    logger.info(f"Selected best matching play UUID: {target_play_uuid}")
+                else:
+                    logger.warning("No matching plays found in Baseball Savant data")
+                    return None
+            else:
+                # No MLB play data, use first available play with UUID
+                for play in all_plays:
+                    if play.get('play_id'):
+                        target_play_uuid = play.get('play_id')
+                        logger.info(f"Using first available play UUID: {target_play_uuid}")
+                        break
+            
+            if not target_play_uuid:
+                logger.warning("No play UUID found")
+                return None
+            
+            # Step 3: Get video URL from sporty-videos endpoint
+            sporty_url = f"{self.savant_base}/sporty-videos?playId={target_play_uuid}"
+            logger.info(f"Getting video from: {sporty_url}")
+            
+            response = requests.get(sporty_url, timeout=15)
+            if response.status_code != 200:
+                logger.warning(f"Baseball Savant sporty-videos failed: {response.status_code}")
+                return None
+            
+            html_content = response.text
+            logger.info(f"Got video page ({len(html_content)} chars)")
+            
+            # Step 4: Extract video URL from HTML using discovered patterns
+            video_url_patterns = [
+                # Primary pattern discovered from testing - sporty-clips.mlb.com with encoded strings
+                r'https://sporty-clips\.mlb\.com/[A-Za-z0-9+/=_-]+\.mp4',
+                # Alternative patterns
+                r'"src":\s*"(https://sporty-clips\.mlb\.com/[^"]*\.mp4)"',
+                r'data-src="(https://sporty-clips\.mlb\.com/[^"]*\.mp4)"',
+                r'<source[^>]*src="(https://sporty-clips\.mlb\.com/[^"]*\.mp4)"',
+                # Other MLB video domains we might encounter
+                r'https://mlb-cuts-diamond\.mlb\.com/[^"\s]*\.mp4',
+                r'https://cuts\.diamond\.mlb\.com/[^"\s]*\.mp4',
+                r'https://bdata-producedclips\.mlb\.com/[^"\s]*\.mp4',
+            ]
+            
+            for pattern in video_url_patterns:
+                matches = re.findall(pattern, html_content, re.IGNORECASE)
+                for match in matches:
+                    video_url = match[0] if isinstance(match, tuple) else match
+                    logger.info(f"Found potential video URL: {video_url}")
+                    
+                    # Test if this URL actually works
+                    try:
+                        test_response = requests.head(video_url, timeout=10)
+                        if test_response.status_code == 200:
+                            content_type = test_response.headers.get('content-type', '')
+                            content_length = test_response.headers.get('content-length', '0')
+                            logger.info(f"Video URL test - Status: {test_response.status_code}, Type: {content_type}, Size: {content_length}")
+                            
+                            # Accept any successful response (not just video content-type)
+                            # Baseball Savant videos may not always have proper content-type headers
+                            if test_response.status_code == 200:
+                                logger.info(f"✅ Confirmed working Baseball Savant video URL: {video_url}")
+                                return video_url
+                    except Exception as e:
+                        logger.warning(f"Video URL test failed: {e}")
+                        continue
+            
+            logger.warning("No working video URL found in Baseball Savant HTML")
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error getting Baseball Savant play video: {e}")
+            return None
+
     def get_game_highlights(self, game_id: int) -> List[Dict]:
-        """Get all highlight videos for a game using MLB-StatsAPI"""
+        """Get all highlight videos for a game using MLB-StatsAPI (fallback method)"""
         try:
             logger.info(f"Getting highlight videos for game {game_id}")
             highlights = statsapi.game_highlight_data(game_id)
@@ -55,7 +199,7 @@ class MLBHighlightGIFIntegration:
             return []
     
     def find_matching_highlight(self, highlights: List[Dict], mlb_play_data: Dict = None) -> Optional[Dict]:
-        """Find the best matching highlight for a specific play"""
+        """Find the best matching highlight for a specific play (fallback method)"""
         if not highlights:
             return None
             
@@ -137,7 +281,7 @@ class MLBHighlightGIFIntegration:
             return highlights[0] if highlights else None
     
     def get_best_video_url(self, highlight: Dict) -> Optional[str]:
-        """Get the best quality video URL from a highlight"""
+        """Get the best quality video URL from a highlight (fallback method)"""
         try:
             playbacks = highlight.get('playbacks', [])
             if not playbacks:
@@ -319,43 +463,68 @@ class MLBHighlightGIFIntegration:
                 logger.warning(f"Error cleaning up temp files: {cleanup_error}")
     
     def create_gif_for_play(self, game_id: int, play_id: int, game_date: str, mlb_play_data: Dict = None) -> Optional[str]:
-        """Create a GIF for a specific play using MLB highlight videos"""
+        """Create a GIF for a specific play using Baseball Savant (primary) or MLB highlights (fallback)"""
         try:
             logger.info(f"Creating GIF for play - game {game_id}, play {play_id}")
             
-            # Step 1: Get all highlights for the game
+            # METHOD 1: Try Baseball Savant individual play video first
+            logger.info("🎯 Trying Baseball Savant individual play video...")
+            savant_video_url = self.get_baseball_savant_play_video(game_id, play_id, mlb_play_data)
+            
+            if savant_video_url:
+                logger.info("✅ Found Baseball Savant play video, creating GIF...")
+                
+                event_type = 'play'
+                if mlb_play_data:
+                    event_type = mlb_play_data.get('result', {}).get('event', 'play').lower().replace(' ', '_')
+                
+                gif_filename = f"mlb_savant_{event_type}_{game_id}_{play_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.gif"
+                gif_path = self.temp_dir / gif_filename
+                
+                success = self.download_and_convert_to_gif(savant_video_url, str(gif_path))
+                
+                if success and gif_path.exists():
+                    logger.info(f"✅ Successfully created Baseball Savant GIF: {gif_path}")
+                    return str(gif_path)
+                else:
+                    logger.warning("❌ Baseball Savant GIF creation failed, trying highlights fallback...")
+            else:
+                logger.info("⚠️ No Baseball Savant video found, trying highlights fallback...")
+            
+            # METHOD 2: Fallback to MLB-StatsAPI highlights
+            logger.info("🎬 Trying MLB-StatsAPI highlights fallback...")
             highlights = self.get_game_highlights(game_id)
             if not highlights:
                 logger.warning(f"No highlights found for game {game_id}")
                 return None
             
-            # Step 2: Find the best matching highlight
+            # Find the best matching highlight
             best_highlight = self.find_matching_highlight(highlights, mlb_play_data)
             if not best_highlight:
                 logger.warning(f"No suitable highlight found for play {play_id}")
                 return None
             
-            # Step 3: Get the best video URL
+            # Get the best video URL
             video_url = self.get_best_video_url(best_highlight)
             if not video_url:
                 logger.warning(f"No video URL found in highlight")
                 return None
             
-            # Step 4: Create the GIF
+            # Create the GIF
             event_type = 'play'
             if mlb_play_data:
                 event_type = mlb_play_data.get('result', {}).get('event', 'play').lower().replace(' ', '_')
             
-            gif_filename = f"mlb_{event_type}_{game_id}_{play_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.gif"
+            gif_filename = f"mlb_highlight_{event_type}_{game_id}_{play_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.gif"
             gif_path = self.temp_dir / gif_filename
             
             success = self.download_and_convert_to_gif(video_url, str(gif_path))
             
             if success and gif_path.exists():
-                logger.info(f"✅ Successfully created GIF: {gif_path}")
+                logger.info(f"✅ Successfully created highlight fallback GIF: {gif_path}")
                 return str(gif_path)
             else:
-                logger.error(f"❌ Failed to create GIF for play {play_id} in game {game_id}")
+                logger.error(f"❌ Failed to create any GIF for play {play_id} in game {game_id}")
                 return None
             
         except Exception as e:
@@ -380,5 +549,5 @@ class BaseballSavantGIFIntegration(MLBHighlightGIFIntegration):
 if __name__ == "__main__":
     # Test the integration
     gif_integration = MLBHighlightGIFIntegration()
-    print("MLB Highlight GIF integration module loaded successfully!")
-    print("Now using reliable MLB-StatsAPI highlight videos instead of Baseball Savant URLs") 
+    print("MLB Hybrid GIF integration module loaded successfully!")
+    print("Now using Baseball Savant individual play videos (primary) + MLB highlights (fallback)") 

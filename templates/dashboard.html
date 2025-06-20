@@ -746,6 +746,90 @@
             opacity: 0.7;
             font-style: italic;
         }
+
+        .highlights-section {
+            margin-bottom: 15px;
+            background: rgba(255, 193, 7, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .highlights-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .highlights-title {
+            font-size: 1em;
+            font-weight: bold;
+            color: #ffc107;
+        }
+
+        .highlights-count {
+            background: linear-gradient(45deg, #ffc107, #ff6b35);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .highlights-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .highlight-item {
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            padding: 8px 10px;
+            margin-bottom: 6px;
+            border-left: 3px solid #ffc107;
+        }
+
+        .highlight-title {
+            font-size: 0.9em;
+            font-weight: bold;
+            color: #ffc107;
+            margin-bottom: 4px;
+        }
+
+        .highlight-details {
+            font-size: 0.8em;
+            opacity: 0.7;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .no-highlights {
+            text-align: center;
+            padding: 15px;
+            opacity: 0.6;
+            font-style: italic;
+        }
+
+        .load-highlights-btn {
+            background: linear-gradient(45deg, #ffc107, #ff6b35);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.3s ease;
+        }
+
+        .load-highlights-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
+        }
+
+        .load-highlights-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -994,6 +1078,18 @@
                         </div>
                         
                         <div class="game-content" style="display: ${isExpanded ? 'block' : 'none'};">
+                            <div class="highlights-section">
+                                <div class="highlights-header">
+                                    <span class="highlights-title">📺 Available Highlights</span>
+                                    <button class="load-highlights-btn" onclick="loadHighlights(${game.game_id})">
+                                        Load Highlights
+                                    </button>
+                                </div>
+                                <div id="highlights-${game.game_id}" class="highlights-list">
+                                    <div class="no-highlights">Click "Load Highlights" to see available video content</div>
+                                </div>
+                            </div>
+                            
                             <div class="plays-list">
                 `;
                 
@@ -1152,6 +1248,54 @@
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
+        }
+
+        async function loadHighlights(gameId) {
+            const button = event.target;
+            const highlightsContainer = document.getElementById(`highlights-${gameId}`);
+            
+            // Show loading state
+            button.disabled = true;
+            button.textContent = 'Loading...';
+            highlightsContainer.innerHTML = '<div class="no-highlights">Loading highlights...</div>';
+            
+            try {
+                const response = await fetch(`/api/highlights/${gameId}`);
+                const result = await response.json();
+                
+                if (result.success && result.highlights.length > 0) {
+                    let highlightsHtml = '';
+                    result.highlights.forEach(highlight => {
+                        highlightsHtml += `
+                            <div class="highlight-item">
+                                <div class="highlight-title">${highlight.title}</div>
+                                <div class="highlight-details">
+                                    <span>Duration: ${highlight.duration}</span>
+                                    <span>${highlight.has_video ? '✅ Video Available' : '❌ No Video'}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    highlightsContainer.innerHTML = highlightsHtml;
+                    
+                    // Update button to show count
+                    button.textContent = `${result.count} Highlights Found`;
+                    
+                } else {
+                    highlightsContainer.innerHTML = '<div class="no-highlights">No highlights available for this game</div>';
+                    button.textContent = 'No Highlights';
+                }
+                
+            } catch (error) {
+                console.error('Error loading highlights:', error);
+                highlightsContainer.innerHTML = '<div class="no-highlights">Error loading highlights</div>';
+                button.textContent = 'Error Loading';
+            }
+            
+            // Re-enable button after 2 seconds
+            setTimeout(() => {
+                button.disabled = false;
+            }, 2000);
         }
     </script>
 </body>

@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """
-Baseball Savant GIF Integration for Manual Dashboard
-Creates ONLY real video GIFs - no fallback static images
+MLB Highlight GIF Integration for Manual Dashboard
+Creates ONLY real video GIFs using MLB-StatsAPI highlight videos
 Optimized for 512MB RAM - creates, sends, and deletes GIFs immediately
-Based on proven METS HRs working system
 """
 
 import os
@@ -11,263 +10,177 @@ import time
 import requests
 import logging
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
-import json
+from typing import Optional, Dict, Any, List
 import subprocess
 import tempfile
 from pathlib import Path
-import csv
-from io import StringIO
-import re
+import sys
+
+# Import statsapi
+try:
+    import statsapi
+except ImportError:
+    try:
+        # Try adding common paths
+        import sys
+        sys.path.append('/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages')
+        import statsapi
+    except ImportError:
+        print("Error: MLB-StatsAPI package not found. Please install it with: pip install MLB-StatsAPI")
+        sys.exit(1)
 
 logger = logging.getLogger(__name__)
 
-class BaseballSavantGIFIntegration:
+class MLBHighlightGIFIntegration:
     def __init__(self):
-        self.savant_base = "https://baseballsavant.mlb.com"
         self.temp_dir = Path(tempfile.gettempdir()) / "mlb_gifs"
         self.temp_dir.mkdir(exist_ok=True)
         
-    def get_statcast_data_for_play(self, game_id: int, play_id: int, game_date: str, mlb_play_data: Dict = None) -> Optional[Dict]:
-        """Get Statcast data for a specific play"""
+    def get_game_highlights(self, game_id: int) -> List[Dict]:
+        """Get all highlight videos for a game using MLB-StatsAPI"""
         try:
-            logger.info(f"Getting Statcast data for game {game_id}, play {play_id} on {game_date}")
+            logger.info(f"Getting highlight videos for game {game_id}")
+            highlights = statsapi.game_highlight_data(game_id)
+            logger.info(f"Found {len(highlights)} highlights for game {game_id}")
             
-            params = {
-                'all': 'true',
-                'hfPT': '',
-                'hfAB': '',
-                'hfBBT': '',
-                'hfPR': '',
-                'hfZ': '',
-                'stadium': '',
-                'hfBBL': '',
-                'hfNewZones': '',
-                'hfGT': 'R|',  # Regular season
-                'hfC': '',
-                'hfSea': '2025|',  # Current season
-                'hfSit': '',
-                'player_type': 'batter',
-                'hfOuts': '',
-                'opponent': '',
-                'pitcher_throws': '',
-                'batter_stands': '',
-                'hfSA': '',
-                'game_date_gt': game_date,
-                'game_date_lt': game_date,
-                'hfInfield': '',
-                'team': '',
-                'position': '',
-                'hfOutfield': '',
-                'hfRO': '',
-                'home_road': '',
-                'game_pk': game_id,
-                'hfFlag': '',
-                'hfPull': '',
-                'metric_1': '',
-                'hfInn': '',
-                'min_pitches': '0',
-                'min_results': '0',
-                'group_by': 'name',
-                'sort_col': 'pitches',
-                'player_event_sort': 'h_launch_speed',
-                'sort_order': 'desc',
-                'min_pas': '0',
-                'type': 'details',
-            }
+            # Log highlight titles for debugging
+            for i, highlight in enumerate(highlights[:5]):
+                title = highlight.get('title', 'No title')
+                logger.debug(f"Highlight {i+1}: {title}")
             
-            # Use the CSV export endpoint for easier parsing
-            url = f"{self.savant_base}/statcast_search/csv"
-            logger.info(f"Requesting Statcast CSV data from: {url}")
-            response = requests.get(url, params=params, timeout=30)
-            response.raise_for_status()
-            
-            # Parse CSV data
-            csv_reader = csv.DictReader(StringIO(response.text))
-            
-            # Get all plays with events (not just pitches)
-            plays_with_events = []
-            for row in csv_reader:
-                if row.get('events'):  # Only rows with actual events
-                    plays_with_events.append(row)
-            
-            logger.info(f"Found {len(plays_with_events)} plays with events for game {game_id}")
-            
-            # If we have MLB play data to match against, try to find the exact play
-            if mlb_play_data and plays_with_events:
-                target_event = mlb_play_data.get('result', {}).get('event', '').lower()
-                target_inning = mlb_play_data.get('about', {}).get('inning')
-                target_batter_id = mlb_play_data.get('matchup', {}).get('batter', {}).get('id')
-                
-                logger.info(f"Looking for play: {target_event} in inning {target_inning} by batter {target_batter_id}")
-                
-                # Try to find exact match
-                for play in plays_with_events:
-                    event = play.get('events', '').lower()
-                    inning = play.get('inning')
-                    batter_id = play.get('batter')
-                    
-                    # Match by event type, inning, and player ID
-                    if ((target_event in event or event in target_event) and 
-                        str(inning) == str(target_inning) and 
-                        str(batter_id) == str(target_batter_id)):
-                        logger.info(f"Found exact matching play: {event} in inning {inning} by batter {batter_id}")
-                        return play
-                
-                # If no exact match, try just by event type and inning
-                for play in plays_with_events:
-                    event = play.get('events', '').lower()
-                    inning = play.get('inning')
-                    if (target_event in event or event in target_event) and str(inning) == str(target_inning):
-                        logger.info(f"Found play by event and inning: {event} in inning {inning}")
-                        return play
-            
-            # Fallback: return the first play with events if any exist
-            if plays_with_events:
-                play = plays_with_events[0]
-                event = play.get('events', '')
-                logger.info(f"Using first available play: {event}")
-                return play
-            
-            logger.warning(f"No plays with events found for game {game_id}")
-            return None
+            return highlights
             
         except Exception as e:
-            logger.error(f"Error fetching Statcast data: {e}")
-            return None
+            logger.error(f"Error fetching highlights for game {game_id}: {e}")
+            return []
     
-    def get_play_animation_url(self, game_id: int, play_id: int, statcast_data: Dict, mlb_play_data: Dict = None) -> Optional[str]:
-        """Get the animation URL for a specific play from Baseball Savant using /gf endpoint"""
-        try:
-            # Get game data from Baseball Savant /gf endpoint - this is the key to finding video URLs!
-            logger.info(f"Getting play UUID for game {game_id}, play {play_id} from /gf endpoint")
-            
-            gf_url = f"{self.savant_base}/gf?game_pk={game_id}&at_bat_number=1"
-            logger.info(f"Requesting game data from: {gf_url}")
-            gf_response = requests.get(gf_url, timeout=15)
-            
-            if gf_response.status_code != 200:
-                logger.warning(f"Failed to get game data from /gf endpoint: {gf_response.status_code}")
-                return None
-            
-            gf_data = gf_response.json()
-            
-            # Look in both home and away team plays
-            all_plays = []
-            all_plays.extend(gf_data.get('team_home', []))
-            all_plays.extend(gf_data.get('team_away', []))
-            
-            logger.info(f"Found {len(all_plays)} total plays in game data")
-            
-            # Find the matching play
-            target_play_uuid = None
-            
-            if mlb_play_data:
-                target_event = mlb_play_data.get('result', {}).get('event', '').lower()
-                target_inning = mlb_play_data.get('about', {}).get('inning')
-                target_batter_name = mlb_play_data.get('matchup', {}).get('batter', {}).get('fullName', '').lower()
-                
-                logger.info(f"Looking for {target_batter_name} {target_event} in inning {target_inning}")
-                
-                # Try to find exact match - prioritize plays that have the actual event in their description
-                best_matches = []
-                for play in all_plays:
-                    play_event = play.get('events', '').lower()
-                    play_description = play.get('des', '').lower()
-                    play_inning = play.get('inning')
-                    play_batter = play.get('batter_name', '').lower()
-                    play_uuid = play.get('play_id')
-                    
-                    # Must match inning and have a play UUID
-                    if str(play_inning) == str(target_inning) and play_uuid:
-                        # Score this match based on how well it matches
-                        score = 0
-                        
-                        # HIGHEST PRIORITY: This is the actual contact pitch (not just a pitch in the at-bat)
-                        pitch_call = play.get('pitch_call', '')
-                        call = play.get('call', '')
-                        if pitch_call == 'hit_into_play' or call == 'X':
-                            score += 1000  # Heavily prioritize the contact pitch
-                        
-                        # High priority: event description contains the target event
-                        if target_event in play_description or target_event.replace(' ', '') in play_description.replace(' ', ''):
-                            score += 100
-                        
-                        # Medium priority: events field matches
-                        if target_event in play_event or play_event in target_event:
-                            score += 50
-                        
-                        # Batter name match
-                        if target_batter_name and target_batter_name in play_batter:
-                            score += 25
-                        
-                        # Any event (not just balls/strikes)
-                        if play_event and play_event not in ['ball', 'called_strike', 'swinging_strike']:
-                            score += 10
-                        
-                        best_matches.append((score, play_uuid, play))
-                        logger.debug(f"Match score {score}: {play_batter} - {play_description} ({pitch_call})")
-                
-                # Sort by score and take the best match
-                if best_matches:
-                    best_matches.sort(key=lambda x: x[0], reverse=True)
-                    target_play_uuid = best_matches[0][1]
-                    best_play = best_matches[0][2]
-                    logger.info(f"Selected best match (score {best_matches[0][0]}): {best_play.get('batter_name')} - {best_play.get('des')}")
-            
-            # If we still don't have a UUID, try to find any contact play
-            if not target_play_uuid:
-                logger.info("No exact match found, looking for any contact play...")
-                for play in all_plays:
-                    pitch_call = play.get('pitch_call', '')
-                    call = play.get('call', '')
-                    play_uuid = play.get('play_id')
-                    
-                    if (pitch_call == 'hit_into_play' or call == 'X') and play_uuid:
-                        target_play_uuid = play_uuid
-                        logger.info(f"Found contact play: {play.get('batter_name')} - {play.get('des')}")
-                        break
-            
-            # If still no UUID, just take the first play with a UUID
-            if not target_play_uuid:
-                logger.info("No contact play found, trying any play with UUID...")
-                for play in all_plays:
-                    play_uuid = play.get('play_id')
-                    if play_uuid:
-                        target_play_uuid = play_uuid
-                        logger.info(f"Using any available play: {play.get('batter_name')} - {play.get('des')}")
-                        break
-            
-            if not target_play_uuid:
-                logger.warning(f"Could not find matching play UUID for game {game_id}")
-                return None
-            
-            # Try multiple video URL formats
-            video_formats = [
-                f"{self.savant_base}/sporty-videos/webm/{target_play_uuid}.webm",
-                f"{self.savant_base}/sporty-videos/mp4/{target_play_uuid}.mp4",
-                f"{self.savant_base}/sporty-clips/{target_play_uuid}.mp4",
-                f"{self.savant_base}/clips/{target_play_uuid}.mp4"
-            ]
-            
-            for video_url in video_formats:
-                logger.info(f"Testing video URL: {video_url}")
-                try:
-                    test_response = requests.head(video_url, timeout=10)
-                    if test_response.status_code == 200:
-                        logger.info(f"✅ Found working video URL: {video_url}")
-                        return video_url
-                    else:
-                        logger.debug(f"❌ Video URL returned {test_response.status_code}: {video_url}")
-                except Exception as e:
-                    logger.debug(f"❌ Video URL test failed: {video_url} - {e}")
-                    continue
-            
-            logger.warning(f"❌ No working video URLs found for play UUID {target_play_uuid}")
+    def find_matching_highlight(self, highlights: List[Dict], mlb_play_data: Dict = None) -> Optional[Dict]:
+        """Find the best matching highlight for a specific play"""
+        if not highlights:
             return None
             
+        if not mlb_play_data:
+            # If no play data provided, return the first highlight
+            return highlights[0]
+        
+        try:
+            # Extract play information for matching
+            play_event = mlb_play_data.get('result', {}).get('event', '').lower()
+            play_description = mlb_play_data.get('result', {}).get('description', '').lower()
+            batter_name = mlb_play_data.get('matchup', {}).get('batter', {}).get('fullName', '').lower()
+            pitcher_name = mlb_play_data.get('matchup', {}).get('pitcher', {}).get('fullName', '').lower()
+            inning = mlb_play_data.get('about', {}).get('inning')
+            
+            logger.info(f"Looking for highlight matching: {batter_name} {play_event} in inning {inning}")
+            
+            # Score each highlight based on how well it matches
+            best_matches = []
+            for highlight in highlights:
+                title = highlight.get('title', '').lower()
+                description = highlight.get('description', '').lower()
+                
+                score = 0
+                
+                # Exact batter name match (highest priority)
+                if batter_name and any(name in title for name in batter_name.split()):
+                    score += 100
+                
+                # Event type match
+                event_keywords = {
+                    'home_run': ['homer', 'home run', 'hr'],
+                    'double': ['double'],
+                    'triple': ['triple'],
+                    'single': ['single'],
+                    'hit_by_pitch': ['hit by pitch', 'hbp'],
+                    'walk': ['walk', 'bb'],
+                    'strikeout': ['strikeout', 'strikes out', 'k'],
+                    'flyout': ['flyout', 'flies out'],
+                    'groundout': ['groundout', 'grounds out'],
+                    'lineout': ['lineout', 'lines out'],
+                    'double_play': ['double play', 'dp']
+                }
+                
+                if play_event in event_keywords:
+                    for keyword in event_keywords[play_event]:
+                        if keyword in title or keyword in description:
+                            score += 50
+                            break
+                
+                # Pitcher name match
+                if pitcher_name and any(name in title for name in pitcher_name.split()):
+                    score += 25
+                
+                # General keywords from description
+                if play_description:
+                    desc_words = play_description.split()
+                    for word in desc_words:
+                        if len(word) > 3 and word in title:
+                            score += 10
+                
+                if score > 0:
+                    best_matches.append((score, highlight))
+                    logger.debug(f"Highlight match score {score}: {title}")
+            
+            # Return the best match
+            if best_matches:
+                best_matches.sort(key=lambda x: x[0], reverse=True)
+                best_highlight = best_matches[0][1]
+                logger.info(f"Selected best matching highlight (score {best_matches[0][0]}): {best_highlight.get('title')}")
+                return best_highlight
+            
+            # If no good matches, return the first highlight
+            logger.info(f"No strong matches found, using first highlight: {highlights[0].get('title')}")
+            return highlights[0]
+            
         except Exception as e:
-            logger.error(f"Error getting play animation URL: {e}")
+            logger.error(f"Error matching highlight: {e}")
+            return highlights[0] if highlights else None
+    
+    def get_best_video_url(self, highlight: Dict) -> Optional[str]:
+        """Get the best quality video URL from a highlight"""
+        try:
+            playbacks = highlight.get('playbacks', [])
+            if not playbacks:
+                logger.warning("No playback URLs found in highlight")
+                return None
+            
+            # Prefer MP4 format for better compatibility
+            mp4_urls = [pb for pb in playbacks if 'mp4' in pb.get('name', '').lower()]
+            if mp4_urls:
+                # Sort by resolution (prefer higher quality but not too high for GIF conversion)
+                # Handle width/height as strings or integers
+                def get_resolution(pb):
+                    try:
+                        width = int(pb.get('width', 0))
+                        height = int(pb.get('height', 0))
+                        return width * height
+                    except (ValueError, TypeError):
+                        return 0
+                
+                mp4_urls.sort(key=get_resolution, reverse=True)
+                
+                # Use medium quality (around 720p) for good balance
+                for pb in mp4_urls:
+                    try:
+                        width = int(pb.get('width', 0))
+                        if 500 <= width <= 1000:  # Good size for GIF conversion
+                            logger.info(f"Selected video: {pb.get('name')} ({width}x{pb.get('height')})")
+                            return pb.get('url')
+                    except (ValueError, TypeError):
+                        continue
+                
+                # Fallback to any MP4
+                best_mp4 = mp4_urls[0]
+                logger.info(f"Using fallback MP4: {best_mp4.get('name')} ({best_mp4.get('width')}x{best_mp4.get('height')})")
+                return best_mp4.get('url')
+            
+            # If no MP4, use any available format
+            best_url = playbacks[0].get('url')
+            logger.info(f"Using fallback format: {playbacks[0].get('name')}")
+            return best_url
+            
+        except Exception as e:
+            logger.error(f"Error extracting video URL: {e}")
             return None
     
     def download_and_convert_to_gif(self, video_url: str, output_path: str, max_duration: int = 8) -> bool:
@@ -276,7 +189,7 @@ class BaseballSavantGIFIntegration:
             logger.info(f"Downloading video from: {video_url}")
             
             # Download the video
-            temp_video = self.temp_dir / f"temp_video_{int(time.time())}.webm"
+            temp_video = self.temp_dir / f"temp_video_{int(time.time())}.mp4"
             
             response = requests.get(video_url, stream=True, timeout=30)
             response.raise_for_status()
@@ -288,7 +201,7 @@ class BaseballSavantGIFIntegration:
             logger.info(f"Downloaded video to: {temp_video}")
             
             # Convert to GIF using ffmpeg - optimized for Discord (under 8MB)
-            # Generate palette first
+            # Generate palette first for better colors
             ffmpeg_cmd = [
                 'ffmpeg',
                 '-i', str(temp_video),
@@ -338,20 +251,29 @@ class BaseballSavantGIFIntegration:
             return False
     
     def create_gif_for_play(self, game_id: int, play_id: int, game_date: str, mlb_play_data: Dict = None) -> Optional[str]:
-        """Create a GIF for a specific play and return the file path (ONLY real video GIFs)"""
+        """Create a GIF for a specific play using MLB highlight videos"""
         try:
             logger.info(f"Creating GIF for play - game {game_id}, play {play_id}")
             
-            # Skip Statcast CSV check - go directly to /gf endpoint which we know has data
-            logger.info(f"Skipping Statcast CSV (unreliable) - going directly to /gf endpoint for game {game_id}")
-            
-            # Step 1: Get the animation URL using the /gf endpoint approach
-            animation_url = self.get_play_animation_url(game_id, play_id, {}, mlb_play_data)
-            if not animation_url:
-                logger.warning(f"No animation URL found for play {play_id} in game {game_id}")
+            # Step 1: Get all highlights for the game
+            highlights = self.get_game_highlights(game_id)
+            if not highlights:
+                logger.warning(f"No highlights found for game {game_id}")
                 return None
             
-            # Step 2: Create the GIF
+            # Step 2: Find the best matching highlight
+            best_highlight = self.find_matching_highlight(highlights, mlb_play_data)
+            if not best_highlight:
+                logger.warning(f"No suitable highlight found for play {play_id}")
+                return None
+            
+            # Step 3: Get the best video URL
+            video_url = self.get_best_video_url(best_highlight)
+            if not video_url:
+                logger.warning(f"No video URL found in highlight")
+                return None
+            
+            # Step 4: Create the GIF
             event_type = 'play'
             if mlb_play_data:
                 event_type = mlb_play_data.get('result', {}).get('event', 'play').lower().replace(' ', '_')
@@ -359,7 +281,7 @@ class BaseballSavantGIFIntegration:
             gif_filename = f"mlb_{event_type}_{game_id}_{play_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.gif"
             gif_path = self.temp_dir / gif_filename
             
-            success = self.download_and_convert_to_gif(animation_url, str(gif_path))
+            success = self.download_and_convert_to_gif(video_url, str(gif_path))
             
             if success and gif_path.exists():
                 logger.info(f"✅ Successfully created GIF: {gif_path}")
@@ -382,8 +304,13 @@ class BaseballSavantGIFIntegration:
         except Exception as e:
             logger.error(f"Error cleaning up temp files: {e}")
 
+# Maintain compatibility with existing code
+class BaseballSavantGIFIntegration(MLBHighlightGIFIntegration):
+    """Compatibility wrapper for existing code"""
+    pass
+
 if __name__ == "__main__":
     # Test the integration
-    gif_integration = BaseballSavantGIFIntegration()
-    print("Baseball Savant GIF integration module loaded successfully!")
-    print("Using proven METS HRs approach with /gf endpoint for video URLs") 
+    gif_integration = MLBHighlightGIFIntegration()
+    print("MLB Highlight GIF integration module loaded successfully!")
+    print("Now using reliable MLB-StatsAPI highlight videos instead of Baseball Savant URLs") 

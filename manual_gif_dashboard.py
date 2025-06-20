@@ -547,6 +547,30 @@ class ManualGIFDashboard:
                 play.gif_processing = False
             return {"success": False, "error": f"Error creating VIDEO GIF: {str(e)}"}
 
+    def get_game_highlights(self, game_id: int) -> List[Dict]:
+        """Get available highlights for a game"""
+        try:
+            logger.info(f"Fetching highlights for game {game_id}")
+            highlights = self.gif_integration.get_game_highlights(game_id)
+            
+            # Format highlights for the dashboard
+            formatted_highlights = []
+            for highlight in highlights:
+                formatted_highlights.append({
+                    'title': highlight.get('title', 'Untitled Highlight'),
+                    'description': highlight.get('description', ''),
+                    'duration': highlight.get('duration', 'Unknown'),
+                    'playbacks': len(highlight.get('playbacks', [])),
+                    'has_video': len(highlight.get('playbacks', [])) > 0
+                })
+            
+            logger.info(f"Found {len(formatted_highlights)} highlights for game {game_id}")
+            return formatted_highlights
+            
+        except Exception as e:
+            logger.error(f"Error fetching highlights for game {game_id}: {e}")
+            return []
+
 # Global dashboard instance
 dashboard = ManualGIFDashboard()
 
@@ -664,6 +688,26 @@ def stop_monitoring():
     dashboard.stop_monitoring()
     flash('Game monitoring stopped', 'warning')
     return redirect(url_for('index'))
+
+@app.route('/api/highlights/<int:game_id>')
+def api_highlights(game_id):
+    """Get available highlights for a specific game"""
+    try:
+        highlights = dashboard.get_game_highlights(game_id)
+        return jsonify({
+            'success': True,
+            'game_id': game_id,
+            'highlights': highlights,
+            'count': len(highlights)
+        })
+    except Exception as e:
+        logger.error(f"Error in highlights API: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'highlights': [],
+            'count': 0
+        }), 500
 
 if __name__ == '__main__':
     # Handle graceful shutdown

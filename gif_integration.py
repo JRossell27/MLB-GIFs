@@ -185,6 +185,9 @@ class MLBHighlightGIFIntegration:
     
     def download_and_convert_to_gif(self, video_url: str, output_path: str, max_duration: int = 8) -> bool:
         """Download video and convert to GIF using ffmpeg"""
+        temp_video = None
+        palette_file = None
+        
         try:
             logger.info(f"Downloading video from: {video_url}")
             
@@ -200,55 +203,94 @@ class MLBHighlightGIFIntegration:
             
             logger.info(f"Downloaded video to: {temp_video}")
             
-            # Convert to GIF using ffmpeg - optimized for Discord (under 8MB)
-            # Generate palette first for better colors
-            ffmpeg_cmd = [
-                'ffmpeg',
-                '-i', str(temp_video),
-                '-t', str(max_duration),  # Limit duration
-                '-vf', 'fps=15,scale=480:-1:flags=lanczos,palettegen=stats_mode=diff',
-                '-y',
-                str(self.temp_dir / 'palette.png')
-            ]
+            # Check video file size
+            video_size = temp_video.stat().st_size / 1024 / 1024
+            logger.info(f"Video file size: {video_size:.1f}MB")
             
-            logger.info("Generating color palette...")
-            subprocess.run(ffmpeg_cmd, check=True, capture_output=True)
+            # Use simpler, faster conversion for memory-constrained environment
+            # Skip palette generation for speed and memory efficiency
+            logger.info("Converting to GIF (optimized for low memory)...")
             
-            # Create GIF with palette
             gif_cmd = [
                 'ffmpeg',
                 '-i', str(temp_video),
-                '-i', str(self.temp_dir / 'palette.png'),
-                '-t', str(max_duration),
-                '-lavfi', 'fps=15,scale=480:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5',
-                '-y',
+                '-t', str(max_duration),  # Limit duration
+                '-vf', 'fps=12,scale=400:-1:flags=lanczos',  # Lower resolution and fps for smaller file
+                '-loop', '0',  # Loop forever
+                '-y',  # Overwrite output
                 output_path
             ]
             
-            logger.info("Creating GIF...")
-            subprocess.run(gif_cmd, check=True, capture_output=True)
+            # Run with timeout and capture output
+            result = subprocess.run(
+                gif_cmd, 
+                check=True, 
+                capture_output=True, 
+                text=True,
+                timeout=60  # 60 second timeout
+            )
             
-            # Clean up temporary files
-            temp_video.unlink()
-            (self.temp_dir / 'palette.png').unlink(missing_ok=True)
+            logger.info("GIF conversion completed successfully")
+            
+            # Check if output file was created
+            if not Path(output_path).exists():
+                logger.error("Output GIF file was not created")
+                return False
             
             # Check file size (Discord limit is ~8MB for GIFs)
             file_size = Path(output_path).stat().st_size
             file_size_mb = file_size / 1024 / 1024
             
             if file_size > 8 * 1024 * 1024:
-                logger.warning(f"GIF too large: {file_size_mb:.1f}MB")
-                return False
+                logger.warning(f"GIF too large: {file_size_mb:.1f}MB, trying smaller version...")
+                
+                # Try again with even smaller settings
+                smaller_cmd = [
+                    'ffmpeg',
+                    '-i', str(temp_video),
+                    '-t', '6',  # Shorter duration
+                    '-vf', 'fps=10,scale=320:-1:flags=lanczos',  # Even smaller
+                    '-loop', '0',
+                    '-y',
+                    output_path
+                ]
+                
+                result = subprocess.run(
+                    smaller_cmd, 
+                    check=True, 
+                    capture_output=True, 
+                    text=True,
+                    timeout=45
+                )
+                
+                file_size = Path(output_path).stat().st_size
+                file_size_mb = file_size / 1024 / 1024
             
             logger.info(f"✅ Successfully created GIF: {output_path} ({file_size_mb:.1f}MB)")
             return True
             
+        except subprocess.TimeoutExpired:
+            logger.error("FFmpeg conversion timed out")
+            return False
         except subprocess.CalledProcessError as e:
             logger.error(f"FFmpeg error: {e}")
+            logger.error(f"FFmpeg stderr: {e.stderr}")
+            logger.error(f"FFmpeg stdout: {e.stdout}")
             return False
         except Exception as e:
             logger.error(f"Error creating GIF: {e}")
             return False
+        finally:
+            # Clean up temporary files
+            try:
+                if temp_video and temp_video.exists():
+                    temp_video.unlink()
+                    logger.debug(f"Cleaned up temp video: {temp_video}")
+                if palette_file and palette_file.exists():
+                    palette_file.unlink()
+                    logger.debug(f"Cleaned up palette file: {palette_file}")
+            except Exception as cleanup_error:
+                logger.warning(f"Error cleaning up temp files: {cleanup_error}")
     
     def create_gif_for_play(self, game_id: int, play_id: int, game_date: str, mlb_play_data: Dict = None) -> Optional[str]:
         """Create a GIF for a specific play using MLB highlight videos"""

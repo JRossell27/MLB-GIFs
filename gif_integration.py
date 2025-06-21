@@ -339,37 +339,37 @@ class MLBHighlightGIFIntegration:
                         logger.warning(f"Could not parse duration '{highlight_duration}', using full video")
                         duration_seconds = None
                 
-                # Build ffmpeg command for HLS input - FAST HIGH QUALITY APPROACH
+                # Build ffmpeg command for HLS input - SIMPLE FAST APPROACH
                 gif_cmd = [
                     'ffmpeg',
                     '-user_agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
                     '-referer', 'https://www.mlb.com/',
-                    '-headers', 'Accept: video/mp4,video/*;q=0.9,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nConnection: keep-alive\r\n',
+                    '-headers', 'Accept: video/mp4,video/*;q=0.9,*/*;q=0.8\\r\\nAccept-Language: en-US,en;q=0.5\\r\\nConnection: keep-alive\\r\\n',
                     '-i', video_url,
-                    '-t', '15',  # Limit to 15 seconds to prevent timeouts
-                    '-vf', 'fps=25,scale=800:-1:flags=lanczos,unsharp=5:5:0.8:3:3:0.4,split[s0][s1];[s0]palettegen=stats_mode=diff[p];[s1][p]paletteuse=dither=bayer:bayer_scale=3',
+                    '-t', '10',  # Shorter duration for faster processing
+                    '-vf', 'fps=20,scale=640:-1:flags=lanczos,unsharp=3:3:0.5:3:3:0.3',  # Simple, fast filter
                     '-loop', '0',
                     '-y',
                     output_path
                 ]
                 
                 # Override duration if specified and reasonable
-                if duration_seconds and duration_seconds <= 20:
+                if duration_seconds and duration_seconds <= 15:
                     gif_cmd[5] = str(duration_seconds)  # Replace the '-t' value
                     logger.info(f"Limiting GIF to {duration_seconds} seconds")
                 else:
-                    logger.info("Using 15 second limit to prevent timeouts")
+                    logger.info("Using 10 second limit for fast processing")
                 
-                # Run ffmpeg with HLS input - single pass with inline palette
+                # Run ffmpeg with HLS input - simple fast conversion
                 result = subprocess.run(
                     gif_cmd, 
                     check=True, 
                     capture_output=True, 
                     text=True,
-                    timeout=60  # Reduced timeout since we're limiting duration
+                    timeout=30  # Much shorter timeout for simple processing
                 )
                 
-                logger.info("Fast high-quality HLS to GIF conversion completed successfully")
+                logger.info("Simple fast GIF conversion completed successfully")
                 
             else:
                 # For direct video files, download first then convert
@@ -432,26 +432,26 @@ class MLBHighlightGIFIntegration:
                         logger.warning(f"Could not parse duration '{highlight_duration}', using full video")
                         duration_seconds = None
                 
-                # Convert to GIF using fast high-quality approach
-                logger.info("Converting to GIF with inline palette generation...")
+                # Convert to GIF using simple fast approach
+                logger.info("Converting to GIF with simple fast conversion...")
                 
-                # Single-pass GIF conversion with inline palette generation
+                # Simple single-pass GIF conversion
                 gif_cmd = [
                     'ffmpeg',
                     '-i', str(temp_video),
-                    '-t', '15',  # Limit to 15 seconds to prevent timeouts
-                    '-vf', 'fps=25,scale=800:-1:flags=lanczos,unsharp=5:5:0.8:3:3:0.4,split[s0][s1];[s0]palettegen=stats_mode=diff[p];[s1][p]paletteuse=dither=bayer:bayer_scale=3',
+                    '-t', '10',  # Shorter duration for faster processing
+                    '-vf', 'fps=20,scale=640:-1:flags=lanczos,unsharp=3:3:0.5:3:3:0.3',  # Simple, fast filter
                     '-loop', '0',
                     '-y',
                     output_path
                 ]
                 
                 # Override duration if specified and reasonable
-                if duration_seconds and duration_seconds <= 20:
+                if duration_seconds and duration_seconds <= 15:
                     gif_cmd[3] = str(duration_seconds)  # Replace the '-t' value
                     logger.info(f"Limiting GIF to {duration_seconds} seconds")
                 else:
-                    logger.info("Using 15 second limit to prevent timeouts")
+                    logger.info("Using 10 second limit for fast processing")
                 
                 # Run with timeout and capture output
                 result = subprocess.run(
@@ -459,10 +459,10 @@ class MLBHighlightGIFIntegration:
                     check=True, 
                     capture_output=True, 
                     text=True,
-                    timeout=60  # Reduced timeout
+                    timeout=30  # Much shorter timeout
                 )
                 
-                logger.info("Fast high-quality GIF conversion completed successfully")
+                logger.info("Simple fast GIF conversion completed successfully")
             
             # Check if output file was created
             if not Path(output_path).exists():
@@ -479,16 +479,16 @@ class MLBHighlightGIFIntegration:
                 # Try again with smaller, faster settings
                 input_source = video_url if is_hls else str(temp_video)
                 
-                # Simple single-pass approach for smaller file
+                # Simple approach for smaller file
                 if is_hls:
                     smaller_cmd = [
                         'ffmpeg',
                         '-user_agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
                         '-referer', 'https://www.mlb.com/',
-                        '-headers', 'Accept: video/mp4,video/*;q=0.9,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nConnection: keep-alive\r\n',
+                        '-headers', 'Accept: video/mp4,video/*;q=0.9,*/*;q=0.8\\r\\nAccept-Language: en-US,en;q=0.5\\r\\nConnection: keep-alive\\r\\n',
                         '-i', input_source,
-                        '-t', '10',  # Shorter duration
-                        '-vf', 'fps=20,scale=640:-1:flags=lanczos,unsharp=3:3:0.6:3:3:0.3,split[s0][s1];[s0]palettegen=stats_mode=diff[p];[s1][p]paletteuse=dither=bayer:bayer_scale=2',
+                        '-t', '8',  # Even shorter duration
+                        '-vf', 'fps=15,scale=480:-1:flags=lanczos',  # Very simple, small output
                         '-loop', '0',
                         '-y',
                         output_path
@@ -497,8 +497,8 @@ class MLBHighlightGIFIntegration:
                     smaller_cmd = [
                         'ffmpeg',
                         '-i', input_source,
-                        '-t', '10',  # Shorter duration
-                        '-vf', 'fps=20,scale=640:-1:flags=lanczos,unsharp=3:3:0.6:3:3:0.3,split[s0][s1];[s0]palettegen=stats_mode=diff[p];[s1][p]paletteuse=dither=bayer:bayer_scale=2',
+                        '-t', '8',  # Even shorter duration
+                        '-vf', 'fps=15,scale=480:-1:flags=lanczos',  # Very simple, small output
                         '-loop', '0',
                         '-y',
                         output_path
@@ -509,7 +509,7 @@ class MLBHighlightGIFIntegration:
                     check=True, 
                     capture_output=True, 
                     text=True,
-                    timeout=45  # Shorter timeout for smaller files
+                    timeout=20  # Very short timeout for small files
                 )
                 
                 file_size = Path(output_path).stat().st_size

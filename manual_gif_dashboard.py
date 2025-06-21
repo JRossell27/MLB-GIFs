@@ -901,6 +901,126 @@ def api_create_highlight_gif():
         logger.error(f"Error creating highlight GIF: {e}")
         return jsonify({"success": False, "error": f"Error creating highlight GIF: {str(e)}"}), 500
 
+@app.route('/api/pitch_data/<int:game_id>')
+def api_pitch_data(game_id):
+    """Get detailed pitch-by-pitch data for a specific game"""
+    try:
+        logger.info(f"Getting pitch data for game {game_id}")
+        pitch_data = dashboard.gif_integration.get_detailed_game_data(game_id)
+        
+        if not pitch_data:
+            return jsonify({
+                'success': False,
+                'error': 'No pitch data available for this game',
+                'game_id': game_id,
+                'data': {}
+            }), 404
+        
+        return jsonify({
+            'success': True,
+            'game_id': game_id,
+            'data': pitch_data
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting pitch data for game {game_id}: {e}")
+        return jsonify({
+            'success': False,
+            'error': f"Error getting pitch data: {str(e)}",
+            'game_id': game_id,
+            'data': {}
+        }), 500
+
+@app.route('/api/create_pitch_gif', methods=['POST'])
+def api_create_pitch_gif():
+    """Create a GIF for a specific individual pitch"""
+    data = request.get_json()
+    game_id = data.get('game_id')
+    play_id = data.get('play_id')
+    team_batting = data.get('team_batting')
+    pitch_info = data.get('pitch_info', {})
+    
+    if not game_id or not play_id or not team_batting:
+        return jsonify({
+            "success": False, 
+            "error": "game_id, play_id, and team_batting required"
+        }), 400
+    
+    try:
+        logger.info(f"Creating GIF for pitch - game {game_id}, play {play_id}")
+        
+        # Create the pitch GIF
+        gif_path = dashboard.gif_integration.create_gif_for_pitch(
+            game_id, play_id, team_batting, pitch_info
+        )
+        
+        if not gif_path:
+            return jsonify({
+                "success": False, 
+                "error": "No video available for this pitch"
+            }), 400
+        
+        logger.info(f"Successfully created pitch GIF: {gif_path}")
+        
+        # Prepare Discord data
+        batter_name = pitch_info.get('batter_name', 'Unknown Batter')
+        pitcher_name = pitch_info.get('pitcher_name', 'Unknown Pitcher')
+        pitch_type = pitch_info.get('pitch_type', 'Unknown Pitch')
+        velocity = pitch_info.get('velocity', 0)
+        count = pitch_info.get('count', '0-0')
+        result = pitch_info.get('result', 'Unknown Result')
+        
+        discord_data = {
+            'event': f'{pitch_type} Pitch',
+            'description': f'{batter_name} vs {pitcher_name}: {pitch_type} {velocity}mph - {result}',
+            'away_team': 'N/A',
+            'home_team': 'N/A',
+            'impact_score': 0.5,  # Individual pitches are medium impact
+            'inning': 'N/A',
+            'half_inning': '',
+            'batter': batter_name,
+            'pitcher': pitcher_name,
+            'timestamp': datetime.now().isoformat(),
+            'pitch_details': {
+                'pitch_type': pitch_type,
+                'velocity': velocity,
+                'count': count,
+                'result': result,
+                'team_batting': team_batting
+            }
+        }
+        
+        # Send to Discord
+        discord_success = discord_client.send_gif_notification(discord_data, gif_path)
+        
+        # Clean up GIF file immediately
+        try:
+            Path(gif_path).unlink()
+            logger.info(f"Cleaned up pitch GIF file: {gif_path}")
+        except Exception as cleanup_error:
+            logger.warning(f"Could not clean up GIF file: {cleanup_error}")
+        
+        if discord_success:
+            logger.info(f"✅ Pitch GIF sent to Discord successfully")
+            return jsonify({
+                "success": True, 
+                "message": "Pitch GIF created and sent to Discord",
+                "pitch_details": pitch_info
+            })
+        else:
+            logger.error(f"❌ Failed to send pitch GIF to Discord")
+            return jsonify({
+                "success": False, 
+                "error": "Failed to send pitch GIF to Discord"
+            })
+            
+    except Exception as e:
+        logger.error(f"Error creating pitch GIF: {e}")
+        return jsonify({
+            "success": False, 
+            "error": f"Error creating pitch GIF: {str(e)}"
+        }), 500
+
 if __name__ == '__main__':
     # Handle graceful shutdown
     def signal_handler(sig, frame):

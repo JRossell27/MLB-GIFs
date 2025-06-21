@@ -1,3 +1,6 @@
 2025-06-20 18:11:53,039 - discord_webhook - WARNING - ⚠️  DISCORD_WEBHOOK_URL not set - Discord notifications disabled
 2025-06-20 18:11:53,042 - __main__ - INFO - ✅ Started game monitoring
 2025-06-20 18:11:53,043 - __main__ - INFO - Starting Manual GIF Dashboard on port 5000
+2025-06-20 20:23:07,850 - discord_webhook - WARNING - ⚠️  DISCORD_WEBHOOK_URL not set - Discord notifications disabled
+2025-06-20 20:23:07,853 - __main__ - INFO - ✅ Started game monitoring
+2025-06-20 20:23:07,854 - __main__ - INFO - Starting Manual GIF Dashboard on port 5000

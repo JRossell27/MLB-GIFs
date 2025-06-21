@@ -1711,7 +1711,7 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    showToast('🎬 Video GIF created and sent to Discord!', 'success');
+                    showToast('🎬 Video GIF created and sent to Telegram!', 'success');
                     
                     // Refresh data to update play status
                     setTimeout(loadGames, 1000);
@@ -1824,7 +1824,7 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    showToast('🎬 Highlight GIF created and sent to Discord!', 'success');
+                    showToast('🎬 Highlight GIF created and sent to Telegram!', 'success');
                     
                     // Update button to show success
                     const button = event.target;
@@ -2023,7 +2023,7 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    showToast(`🎬 Pitch GIF created and sent to Discord! ${pitchInfo.pitch_type} ${pitchInfo.velocity}mph`, 'success');
+                    showToast(`🎬 Pitch GIF created and sent to Telegram! ${pitchInfo.pitch_type} ${pitchInfo.velocity}mph`, 'success');
                     
                     // Update button to show success
                     const button = event.target;

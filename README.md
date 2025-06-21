@@ -1,6 +1,6 @@
 # 🎯 Manual MLB GIF Dashboard
 
-A comprehensive web dashboard for manually selecting MLB plays to convert into GIFs and send to Discord. This system provides complete control over which plays become GIFs, with real-time game monitoring and an intuitive selection interface.
+A comprehensive web dashboard for manually selecting MLB plays to convert into GIFs and send to Telegram. This system provides complete control over which plays become GIFs, with real-time game monitoring and an intuitive selection interface.
 
 ## ✨ Features
 
@@ -24,7 +24,7 @@ A comprehensive web dashboard for manually selecting MLB plays to convert into G
 
 ### 🎬 Professional GIF Creation
 - **Baseball Savant Integration**: Uses official MLB video sources
-- **High-Quality Output**: Optimized GIF compression for Discord's 8MB limit
+- **High-Quality Output**: Optimized GIF compression for Telegram's file limits
 - **Fast Processing**: Typically creates GIFs in under 30 seconds
 - **Error Handling**: Robust fallback systems for reliable operation
 
@@ -33,7 +33,7 @@ A comprehensive web dashboard for manually selecting MLB plays to convert into G
 ### Prerequisites
 - Python 3.11+
 - FFmpeg (for video processing)
-- Discord Webhook URL
+- Telegram Bot Token and Chat ID
 
 ### Local Development
 
@@ -46,7 +46,8 @@ A comprehensive web dashboard for manually selecting MLB plays to convert into G
 
 2. **Configure Environment**
    ```bash
-   export DISCORD_WEBHOOK_URL="your_discord_webhook_url_here"
+   export TELEGRAM_BOT_TOKEN="your_telegram_bot_token_here"
+   export TELEGRAM_CHAT_ID="your_telegram_chat_id_here"
    export SECRET_KEY="your_secret_key_here"
    ```
 
@@ -74,7 +75,8 @@ This system is optimized for Render's free tier:
 
 3. **Set Environment Variables**
    ```
-   DISCORD_WEBHOOK_URL = your_discord_webhook_url
+   TELEGRAM_BOT_TOKEN = your_telegram_bot_token
+   TELEGRAM_CHAT_ID = your_telegram_chat_id
    SECRET_KEY = auto-generated_or_custom
    PORT = 10000
    ```
@@ -84,17 +86,25 @@ This system is optimized for Render's free tier:
    - Wait for deployment to complete
    - Access your dashboard at the provided Render URL
 
-### 📱 Discord Setup
+### 📱 Telegram Bot Setup
 
-1. **Create Webhook**
-   - Go to your Discord server settings
-   - Navigate to Integrations → Webhooks
-   - Click "New Webhook"
-   - Copy the webhook URL
+1. **Create Telegram Bot**
+   - Message @BotFather on Telegram
+   - Send `/newbot` command
+   - Follow the prompts to create your bot
+   - Copy the bot token (looks like: `123456789:ABCdefGHIjklMNOpqrSTUvwxyz`)
 
-2. **Set Environment Variable**
+2. **Get Chat ID**
+   - Add your bot to a group or channel, OR
+   - Start a private chat with your bot
+   - Send a message to the bot/group
+   - Visit: `https://api.telegram.org/bot<YourBOTToken>/getUpdates`
+   - Find your chat ID in the response (positive for groups, negative for channels)
+
+3. **Set Environment Variables**
    ```bash
-   export DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/your/webhook/url"
+   export TELEGRAM_BOT_TOKEN="123456789:ABCdefGHIjklMNOpqrSTUvwxyz"
+   export TELEGRAM_CHAT_ID="your_chat_id_here"
    ```
 
 ## 🎯 How to Use
@@ -112,7 +122,7 @@ This system is optimized for Render's free tier:
 ### 3. **Create GIFs**
    - Click "🎬 Create GIF" on any play you want to turn into a GIF
    - System will find the best video match from Baseball Savant
-   - GIF is created, sent to Discord, and immediately deleted from server
+   - GIF is created, sent to Telegram, and immediately deleted from server
 
 ### 4. **Track Status**
    - Status bar shows monitoring status, last update time, and totals
@@ -134,9 +144,9 @@ This system is optimized for Render's free tier:
 
 ### GIF Settings
 - **Max Duration**: 8 seconds
-- **Resolution**: 480p (optimized for Discord)
-- **Frame Rate**: 15 fps
-- **Max File Size**: 8MB (Discord limit)
+- **Resolution**: 640p (high quality for Telegram)
+- **Frame Rate**: 20 fps
+- **Max File Size**: 50MB (Telegram bot limit)
 
 ## 🌟 API Endpoints
 
@@ -202,7 +212,7 @@ This system is optimized for Render's free tier:
 **GIF Creation Fails**
 - Check if FFmpeg is installed and accessible
 - Verify Baseball Savant video availability
-- Check Discord webhook URL and permissions
+- Check Telegram bot token and chat ID
 
 **Dashboard Not Updating**
 - Verify MLB API connectivity

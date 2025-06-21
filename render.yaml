@@ -7,7 +7,9 @@ services:
     startCommand: python manual_gif_dashboard.py
     healthCheckPath: /api/ping
     envVars:
-      - key: DISCORD_WEBHOOK_URL
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
         sync: false
       - key: SECRET_KEY
         generateValue: true

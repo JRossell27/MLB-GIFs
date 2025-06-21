@@ -468,11 +468,11 @@ class MLBHighlightGIFIntegration:
                 logger.error("Output GIF file was not created")
                 return False
             
-            # Check file size (Discord limit is ~8MB for GIFs)
+            # Check file size (Telegram bot limit is ~50MB for GIFs)
             file_size = Path(output_path).stat().st_size
             file_size_mb = file_size / 1024 / 1024
             
-            if file_size > 8 * 1024 * 1024:
+            if file_size > 50 * 1024 * 1024:
                 logger.warning(f"GIF too large: {file_size_mb:.1f}MB, trying with shorter duration...")
                 
                 # Try again with 10 second limit

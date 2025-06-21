@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 # Import our local components
 from gif_integration import BaseballSavantGIFIntegration
-from discord_webhook import discord_client
+from telegram_bot import telegram_client
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-key-change-in-production')
@@ -465,7 +465,7 @@ class ManualGIFDashboard:
             logger.info(f"Removed old game {game_id}")
     
     def create_gif_for_play(self, play_id: str) -> Dict:
-        """Create a REAL VIDEO GIF for the specified play and send to Discord"""
+        """Create a REAL VIDEO GIF for the specified play and send to Telegram"""
         try:
             # Find the play
             play = None
@@ -503,8 +503,8 @@ class ManualGIFDashboard:
             if gif_path and os.path.exists(gif_path):
                 logger.info(f"Successfully created VIDEO GIF: {gif_path}")
                 
-                # Send to Discord
-                discord_data = {
+                # Send to Telegram
+                telegram_data = {
                     'event': play.event,
                     'description': play.description,
                     'away_team': play.away_team,
@@ -514,10 +514,12 @@ class ManualGIFDashboard:
                     'half_inning': play.half_inning,
                     'batter': play.batter,
                     'pitcher': play.pitcher,
+                    'away_score': play.away_score,
+                    'home_score': play.home_score,
                     'timestamp': play.timestamp.isoformat()
                 }
                 
-                success = discord_client.send_gif_notification(discord_data, gif_path)
+                success = telegram_client.send_gif_notification(telegram_data, gif_path)
                 
                 # Clean up GIF file immediately
                 try:
@@ -529,12 +531,12 @@ class ManualGIFDashboard:
                 if success:
                     play.gif_created = True
                     play.gif_processing = False
-                    logger.info(f"✅ VIDEO GIF sent to Discord successfully for {play.event}")
-                    return {"success": True, "message": "VIDEO GIF created and sent to Discord"}
+                    logger.info(f"✅ VIDEO GIF sent to Telegram successfully for {play.event}")
+                    return {"success": True, "message": "VIDEO GIF created and sent to Telegram"}
                 else:
                     play.gif_processing = False
-                    logger.error(f"❌ Failed to send VIDEO GIF to Discord")
-                    return {"success": False, "error": "Failed to send VIDEO GIF to Discord"}
+                    logger.error(f"❌ Failed to send VIDEO GIF to Telegram")
+                    return {"success": False, "error": "Failed to send VIDEO GIF to Telegram"}
             else:
                 play.gif_processing = False
                 logger.warning(f"⚠️ No Baseball Savant video available for {play.event} by {play.batter}")
@@ -774,7 +776,7 @@ def api_status():
         'last_update': dashboard.last_update.isoformat() if dashboard.last_update else None,
         'total_games': len(dashboard.games),
         'total_plays': sum(len(game.plays) for game in dashboard.games.values()),
-        'discord_configured': discord_client.is_configured()
+        'telegram_configured': telegram_client.is_configured()
     })
 
 @app.route('/api/ping')
@@ -862,8 +864,8 @@ def api_create_highlight_gif():
         if success and gif_path.exists():
             logger.info(f"Successfully created highlight GIF: {gif_path}")
             
-            # Prepare Discord data
-            discord_data = {
+            # Prepare Telegram data
+            telegram_data = {
                 'event': 'MLB Highlight',
                 'description': highlight.get('title', 'MLB Highlight'),
                 'away_team': 'N/A',
@@ -873,12 +875,14 @@ def api_create_highlight_gif():
                 'half_inning': '',
                 'batter': 'Multiple Players',
                 'pitcher': 'Multiple Players',
+                'away_score': 0,
+                'home_score': 0,
                 'timestamp': datetime.now().isoformat(),
                 'highlight_title': highlight.get('title', 'Unknown Highlight')
             }
             
-            # Send to Discord
-            discord_success = discord_client.send_gif_notification(discord_data, str(gif_path))
+            # Send to Telegram
+            telegram_success = telegram_client.send_gif_notification(telegram_data, str(gif_path))
             
             # Clean up GIF file immediately
             try:
@@ -887,12 +891,12 @@ def api_create_highlight_gif():
             except:
                 pass
             
-            if discord_success:
-                logger.info(f"✅ Highlight GIF sent to Discord successfully")
-                return jsonify({"success": True, "message": "Highlight GIF created and sent to Discord"})
+            if telegram_success:
+                logger.info(f"✅ Highlight GIF sent to Telegram successfully")
+                return jsonify({"success": True, "message": "Highlight GIF created and sent to Telegram"})
             else:
-                logger.error(f"❌ Failed to send highlight GIF to Discord")
-                return jsonify({"success": False, "error": "Failed to send highlight GIF to Discord"})
+                logger.error(f"❌ Failed to send highlight GIF to Telegram")
+                return jsonify({"success": False, "error": "Failed to send highlight GIF to Telegram"})
         else:
             logger.error(f"❌ Failed to create highlight GIF")
             return jsonify({"success": False, "error": "Failed to create highlight GIF"})
@@ -962,7 +966,7 @@ def api_create_pitch_gif():
         
         logger.info(f"Successfully created pitch GIF: {gif_path}")
         
-        # Prepare Discord data
+        # Prepare Telegram data
         batter_name = pitch_info.get('batter_name', 'Unknown Batter')
         pitcher_name = pitch_info.get('pitcher_name', 'Unknown Pitcher')
         pitch_type = pitch_info.get('pitch_type', 'Unknown Pitch')
@@ -970,7 +974,7 @@ def api_create_pitch_gif():
         count = pitch_info.get('count', '0-0')
         result = pitch_info.get('result', 'Unknown Result')
         
-        discord_data = {
+        telegram_data = {
             'event': f'{pitch_type} Pitch',
             'description': f'{batter_name} vs {pitcher_name}: {pitch_type} {velocity}mph - {result}',
             'away_team': 'N/A',
@@ -980,6 +984,8 @@ def api_create_pitch_gif():
             'half_inning': '',
             'batter': batter_name,
             'pitcher': pitcher_name,
+            'away_score': 0,
+            'home_score': 0,
             'timestamp': datetime.now().isoformat(),
             'pitch_details': {
                 'pitch_type': pitch_type,
@@ -990,8 +996,8 @@ def api_create_pitch_gif():
             }
         }
         
-        # Send to Discord
-        discord_success = discord_client.send_gif_notification(discord_data, gif_path)
+        # Send to Telegram
+        telegram_success = telegram_client.send_gif_notification(telegram_data, gif_path)
         
         # Clean up GIF file immediately
         try:
@@ -1000,18 +1006,18 @@ def api_create_pitch_gif():
         except Exception as cleanup_error:
             logger.warning(f"Could not clean up GIF file: {cleanup_error}")
         
-        if discord_success:
-            logger.info(f"✅ Pitch GIF sent to Discord successfully")
+        if telegram_success:
+            logger.info(f"✅ Pitch GIF sent to Telegram successfully")
             return jsonify({
                 "success": True, 
-                "message": "Pitch GIF created and sent to Discord",
+                "message": "Pitch GIF created and sent to Telegram",
                 "pitch_details": pitch_info
             })
         else:
-            logger.error(f"❌ Failed to send pitch GIF to Discord")
+            logger.error(f"❌ Failed to send pitch GIF to Telegram")
             return jsonify({
                 "success": False, 
-                "error": "Failed to send pitch GIF to Discord"
+                "error": "Failed to send pitch GIF to Telegram"
             })
             
     except Exception as e:

@@ -339,25 +339,47 @@ class MLBHighlightGIFIntegration:
                         logger.warning(f"Could not parse duration '{highlight_duration}', using full video")
                         duration_seconds = None
                 
-                # Build ffmpeg command for HLS input
+                # Build ffmpeg command for HLS input - HIGH QUALITY GIF APPROACH
+                # Step 1: Generate optimal palette for GIF colors
+                palette_path = str(self.temp_dir / f"palette_{int(time.time())}.png")
+                palette_cmd = [
+                    'ffmpeg',
+                    '-user_agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                    '-referer', 'https://www.mlb.com/',
+                    '-headers', 'Accept: video/mp4,video/*;q=0.9,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nConnection: keep-alive\r\n',
+                    '-i', video_url,
+                    '-vf', 'fps=25,scale=800:-1:flags=lanczos,palettegen=stats_mode=diff',
+                    '-y',
+                    palette_path
+                ]
+                
+                # Add duration limit for palette generation if specified
+                if duration_seconds and duration_seconds <= 20:
+                    palette_cmd.insert(4, '-t')
+                    palette_cmd.insert(5, str(duration_seconds))
+                
+                # Generate palette
+                logger.info("Generating optimal color palette for high-quality GIF...")
+                subprocess.run(palette_cmd, check=True, capture_output=True, text=True, timeout=60)
+                
+                # Step 2: Create high-quality GIF using the generated palette
                 gif_cmd = [
                     'ffmpeg',
                     '-user_agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
                     '-referer', 'https://www.mlb.com/',
                     '-headers', 'Accept: video/mp4,video/*;q=0.9,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nConnection: keep-alive\r\n',
                     '-i', video_url,
-                    '-vf', 'fps=20,scale=640:-1:flags=lanczos,unsharp=3:3:0.5:3:3:0.3',  # Higher quality with sharpening
+                    '-i', palette_path,
+                    '-lavfi', 'fps=25,scale=800:-1:flags=lanczos,unsharp=5:5:0.8:3:3:0.4[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle',
                     '-loop', '0',
-                    '-preset', 'slow',  # Better compression
-                    '-crf', '18',       # High quality
                     '-y',
                     output_path
                 ]
                 
                 # Add duration limit if specified
                 if duration_seconds and duration_seconds <= 20:
-                    gif_cmd.insert(3, '-t')
-                    gif_cmd.insert(4, str(duration_seconds))
+                    gif_cmd.insert(4, '-t')
+                    gif_cmd.insert(5, str(duration_seconds))
                     logger.info(f"Limiting GIF to {duration_seconds} seconds")
                 else:
                     logger.info("Using full video duration (no time limit)")
@@ -371,7 +393,13 @@ class MLBHighlightGIFIntegration:
                     timeout=90
                 )
                 
-                logger.info("HLS to GIF conversion completed successfully")
+                # Clean up palette file
+                try:
+                    Path(palette_path).unlink()
+                except:
+                    pass
+                
+                logger.info("High-quality HLS to GIF conversion completed successfully")
                 
             else:
                 # For direct video files, download first then convert
@@ -434,16 +462,35 @@ class MLBHighlightGIFIntegration:
                         logger.warning(f"Could not parse duration '{highlight_duration}', using full video")
                         duration_seconds = None
                 
-                # Convert to GIF
-                logger.info("Converting to GIF (using full highlight duration)...")
+                # Convert to GIF using high-quality palette approach
+                logger.info("Converting to GIF with optimal palette generation...")
                 
+                # Step 1: Generate optimal palette for GIF colors
+                palette_path = str(self.temp_dir / f"palette_{int(time.time())}.png")
+                palette_cmd = [
+                    'ffmpeg',
+                    '-i', str(temp_video),
+                    '-vf', 'fps=25,scale=800:-1:flags=lanczos,palettegen=stats_mode=diff',
+                    '-y',
+                    palette_path
+                ]
+                
+                # Add duration limit for palette generation if specified
+                if duration_seconds and duration_seconds <= 20:
+                    palette_cmd.insert(3, '-t')
+                    palette_cmd.insert(4, str(duration_seconds))
+                
+                # Generate palette
+                logger.info("Generating optimal color palette...")
+                subprocess.run(palette_cmd, check=True, capture_output=True, text=True, timeout=60)
+                
+                # Step 2: Create high-quality GIF using the generated palette
                 gif_cmd = [
                     'ffmpeg',
                     '-i', str(temp_video),
-                    '-vf', 'fps=20,scale=640:-1:flags=lanczos,unsharp=3:3:0.5:3:3:0.3',  # Higher quality with sharpening
+                    '-i', palette_path,
+                    '-lavfi', 'fps=25,scale=800:-1:flags=lanczos,unsharp=5:5:0.8:3:3:0.4[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle',
                     '-loop', '0',
-                    '-preset', 'slow',  # Better compression
-                    '-crf', '18',       # High quality
                     '-y',
                     output_path
                 ]
@@ -465,7 +512,13 @@ class MLBHighlightGIFIntegration:
                     timeout=90
                 )
                 
-                logger.info("GIF conversion completed successfully")
+                # Clean up palette file
+                try:
+                    Path(palette_path).unlink()
+                except:
+                    pass
+                
+                logger.info("High-quality GIF conversion completed successfully")
             
             # Check if output file was created
             if not Path(output_path).exists():
@@ -477,18 +530,47 @@ class MLBHighlightGIFIntegration:
             file_size_mb = file_size / 1024 / 1024
             
             if file_size > 50 * 1024 * 1024:
-                logger.warning(f"GIF too large: {file_size_mb:.1f}MB, trying with shorter duration...")
+                logger.warning(f"GIF too large: {file_size_mb:.1f}MB, trying with optimized settings...")
                 
-                # Try again with 10 second limit
+                # Try again with optimized settings for smaller file size
                 input_source = video_url if is_hls else str(temp_video)
+                
+                # Generate smaller palette
+                palette_path = str(self.temp_dir / f"palette_small_{int(time.time())}.png")
+                palette_cmd = [
+                    'ffmpeg',
+                    '-i', input_source,
+                    '-t', '10',  # 10 second limit
+                    '-vf', 'fps=20,scale=640:-1:flags=lanczos,palettegen=stats_mode=diff',
+                    '-y',
+                    palette_path
+                ]
+                
+                # Add headers for HLS streams
+                if is_hls:
+                    palette_cmd = [
+                        'ffmpeg',
+                        '-user_agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                        '-referer', 'https://www.mlb.com/',
+                        '-headers', 'Accept: video/mp4,video/*;q=0.9,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nConnection: keep-alive\r\n',
+                        '-i', input_source,
+                        '-t', '10',
+                        '-vf', 'fps=20,scale=640:-1:flags=lanczos,palettegen=stats_mode=diff',
+                        '-y',
+                        palette_path
+                    ]
+                
+                # Generate palette
+                subprocess.run(palette_cmd, check=True, capture_output=True, text=True, timeout=60)
+                
+                # Create optimized GIF
                 smaller_cmd = [
                     'ffmpeg',
                     '-i', input_source,
+                    '-i', palette_path,
                     '-t', '10',  # 10 second fallback
-                    '-vf', 'fps=18,scale=560:-1:flags=lanczos,unsharp=3:3:0.5:3:3:0.3',  # Better fallback quality with sharpening
+                    '-lavfi', 'fps=20,scale=640:-1:flags=lanczos,unsharp=3:3:0.6:3:3:0.3[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=3:diff_mode=rectangle',
                     '-loop', '0',
-                    '-preset', 'medium',  # Balanced compression for fallback
-                    '-crf', '20',         # Good quality for fallback
                     '-y',
                     output_path
                 ]
@@ -501,11 +583,10 @@ class MLBHighlightGIFIntegration:
                         '-referer', 'https://www.mlb.com/',
                         '-headers', 'Accept: video/mp4,video/*;q=0.9,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nConnection: keep-alive\r\n',
                         '-i', input_source,
+                        '-i', palette_path,
                         '-t', '10',
-                        '-vf', 'fps=18,scale=560:-1:flags=lanczos,unsharp=3:3:0.5:3:3:0.3',
+                        '-lavfi', 'fps=20,scale=640:-1:flags=lanczos,unsharp=3:3:0.6:3:3:0.3[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=3:diff_mode=rectangle',
                         '-loop', '0',
-                        '-preset', 'medium',
-                        '-crf', '20',
                         '-y',
                         output_path
                     ]
@@ -517,6 +598,12 @@ class MLBHighlightGIFIntegration:
                     text=True,
                     timeout=60
                 )
+                
+                # Clean up palette file
+                try:
+                    Path(palette_path).unlink()
+                except:
+                    pass
                 
                 file_size = Path(output_path).stat().st_size
                 file_size_mb = file_size / 1024 / 1024

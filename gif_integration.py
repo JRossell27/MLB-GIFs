@@ -347,7 +347,7 @@ class MLBHighlightGIFIntegration:
                     '-headers', 'Accept: video/mp4,video/*;q=0.9,*/*;q=0.8\\r\\nAccept-Language: en-US,en;q=0.5\\r\\nConnection: keep-alive\\r\\n',
                     '-i', video_url,
                     '-t', '10',  # Keep duration short for speed
-                    '-vf', 'fps=24,scale=1080:-1:flags=lanczos,unsharp=5:5:1.0:3:3:0.6',  # Ultra high resolution
+                    '-vf', 'fps=24,scale=720:-1:flags=lanczos,unsharp=5:5:1.0:3:3:0.6',  # High quality 720p
                     '-loop', '0',
                     '-y',
                     output_path
@@ -366,7 +366,7 @@ class MLBHighlightGIFIntegration:
                     check=True, 
                     capture_output=True, 
                     text=True,
-                    timeout=120  # Extended timeout for ultra reliable processing
+                    timeout=180  # Very generous 3 minute timeout for ultra reliability
                 )
                 
                 logger.info("Enhanced quality GIF conversion completed successfully")
@@ -440,7 +440,7 @@ class MLBHighlightGIFIntegration:
                     'ffmpeg',
                     '-i', str(temp_video),
                     '-t', '10',  # Keep duration short for speed
-                    '-vf', 'fps=24,scale=1080:-1:flags=lanczos,unsharp=5:5:1.0:3:3:0.6',  # Ultra high resolution
+                    '-vf', 'fps=24,scale=720:-1:flags=lanczos,unsharp=5:5:1.0:3:3:0.6',  # High quality 720p
                     '-loop', '0',
                     '-y',
                     output_path
@@ -459,7 +459,7 @@ class MLBHighlightGIFIntegration:
                     check=True, 
                     capture_output=True, 
                     text=True,
-                    timeout=120  # Extended timeout for ultra reliable processing
+                    timeout=180  # Very generous 3 minute timeout for ultra reliability
                 )
                 
                 logger.info("Enhanced quality GIF conversion completed successfully")
@@ -488,7 +488,7 @@ class MLBHighlightGIFIntegration:
                         '-headers', 'Accept: video/mp4,video/*;q=0.9,*/*;q=0.8\\r\\nAccept-Language: en-US,en;q=0.5\\r\\nConnection: keep-alive\\r\\n',
                         '-i', input_source,
                         '-t', '8',  # Shorter duration
-                        '-vf', 'fps=20,scale=720:-1:flags=lanczos,unsharp=3:3:0.8:3:3:0.5',  # Good quality fallback
+                        '-vf', 'fps=20,scale=600:-1:flags=lanczos,unsharp=3:3:0.8:3:3:0.5',  # Moderate quality fallback
                         '-loop', '0',
                         '-y',
                         output_path
@@ -498,7 +498,7 @@ class MLBHighlightGIFIntegration:
                         'ffmpeg',
                         '-i', input_source,
                         '-t', '8',  # Shorter duration
-                        '-vf', 'fps=20,scale=720:-1:flags=lanczos,unsharp=3:3:0.8:3:3:0.5',  # Good quality fallback
+                        '-vf', 'fps=20,scale=600:-1:flags=lanczos,unsharp=3:3:0.8:3:3:0.5',  # Moderate quality fallback
                         '-loop', '0',
                         '-y',
                         output_path
@@ -509,7 +509,7 @@ class MLBHighlightGIFIntegration:
                     check=True, 
                     capture_output=True, 
                     text=True,
-                    timeout=90  # Longer timeout for fallback processing
+                    timeout=120  # Still generous 2 minute timeout for fallback
                 )
                 
                 file_size = Path(output_path).stat().st_size

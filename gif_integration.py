@@ -346,8 +346,10 @@ class MLBHighlightGIFIntegration:
                     '-referer', 'https://www.mlb.com/',
                     '-headers', 'Accept: video/mp4,video/*;q=0.9,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nConnection: keep-alive\r\n',
                     '-i', video_url,
-                    '-vf', 'fps=20,scale=640:-1:flags=lanczos',  # Higher quality: 640px width, 20fps
+                    '-vf', 'fps=20,scale=640:-1:flags=lanczos,unsharp=0.25:0.25:1:0.25:0.25:1',  # Higher quality with sharpening
                     '-loop', '0',
+                    '-preset', 'slow',  # Better compression
+                    '-crf', '18',       # High quality
                     '-y',
                     output_path
                 ]
@@ -438,8 +440,10 @@ class MLBHighlightGIFIntegration:
                 gif_cmd = [
                     'ffmpeg',
                     '-i', str(temp_video),
-                    '-vf', 'fps=20,scale=640:-1:flags=lanczos',  # Higher quality: 640px width, 20fps
+                    '-vf', 'fps=20,scale=640:-1:flags=lanczos,unsharp=0.25:0.25:1:0.25:0.25:1',  # Higher quality with sharpening
                     '-loop', '0',
+                    '-preset', 'slow',  # Better compression
+                    '-crf', '18',       # High quality
                     '-y',
                     output_path
                 ]
@@ -481,8 +485,10 @@ class MLBHighlightGIFIntegration:
                     'ffmpeg',
                     '-i', input_source,
                     '-t', '10',  # 10 second fallback
-                    '-vf', 'fps=18,scale=560:-1:flags=lanczos',  # Better fallback quality
+                    '-vf', 'fps=18,scale=560:-1:flags=lanczos,unsharp=0.25:0.25:1:0.25:0.25:1',  # Better fallback quality with sharpening
                     '-loop', '0',
+                    '-preset', 'medium',  # Balanced compression for fallback
+                    '-crf', '20',         # Good quality for fallback
                     '-y',
                     output_path
                 ]
@@ -496,8 +502,10 @@ class MLBHighlightGIFIntegration:
                         '-headers', 'Accept: video/mp4,video/*;q=0.9,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nConnection: keep-alive\r\n',
                         '-i', input_source,
                         '-t', '10',
-                        '-vf', 'fps=18,scale=560:-1:flags=lanczos',
+                        '-vf', 'fps=18,scale=560:-1:flags=lanczos,unsharp=0.25:0.25:1:0.25:0.25:1',
                         '-loop', '0',
+                        '-preset', 'medium',
+                        '-crf', '20',
                         '-y',
                         output_path
                     ]
@@ -620,9 +628,12 @@ class MLBHighlightGIFIntegration:
             }
             
             # Process both home and away team data
+            # IMPORTANT: Baseball Savant data structure is inverted!
+            # - team_home data contains pitches when AWAY team is batting
+            # - team_away data contains pitches when HOME team is batting
             teams_data = [
-                (data.get('team_home', []), 'home', 'bottom'),
-                (data.get('team_away', []), 'away', 'top')
+                (data.get('team_home', []), 'home', 'bottom'),  # home data source
+                (data.get('team_away', []), 'away', 'top')      # away data source
             ]
             
             for team_plays, team_type, inning_half in teams_data:
@@ -653,7 +664,7 @@ class MLBHighlightGIFIntegration:
                         'play_id': play.get('play_id'),
                         'pitch_number': play.get('pitch_number', 1),
                         'pitch_type': play.get('pitch_name', 'Unknown'),
-                        'velocity': play.get('release_speed', 0),
+                        'velocity': play.get('start_speed', 0) or play.get('release_speed', 0),  # Use start_speed first, fallback to release_speed
                         'result': play.get('description', ''),
                         'pitcher_name': play.get('pitcher_name', 'Unknown Pitcher'),
                         'count': f"{play.get('balls', 0)}-{play.get('strikes', 0)}",
@@ -711,8 +722,9 @@ class MLBHighlightGIFIntegration:
             if not play_id:
                 return None
                 
-            # Determine team path based on batting team
-            team_path = 'home' if team_batting == 'home' else 'away'
+            # The team_batting parameter represents the data source (home/away)
+            # Video URL path should match the data source
+            team_path = team_batting  # 'home' or 'away' - matches data source
             
             # Use proper headers for MLB access
             headers = {

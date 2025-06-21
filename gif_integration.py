@@ -629,8 +629,48 @@ class MLBHighlightGIFIntegration:
                 if not isinstance(team_plays, list):
                     continue
                     
+                # Group pitches by at-bat first to organize properly
+                at_bat_groups = {}
+                
                 for play in team_plays:
                     inning = play.get('inning', 1)
+                    batter_name = play.get('batter_name', 'Unknown Batter')
+                    
+                    # Create a more robust at-bat key using inning + batter + sequence
+                    # This ensures we don't mix up different at-bats by the same batter
+                    at_bat_key = f"{inning}_{batter_name}_{play.get('at_bat_number', 0)}"
+                    
+                    if at_bat_key not in at_bat_groups:
+                        at_bat_groups[at_bat_key] = {
+                            'inning': inning,
+                            'batter_name': batter_name,
+                            'pitches': [],
+                            'at_bat_result': None
+                        }
+                    
+                    # Add each pitch as an individual entry
+                    pitch_data = {
+                        'play_id': play.get('play_id'),
+                        'pitch_number': play.get('pitch_number', 1),
+                        'pitch_type': play.get('pitch_name', 'Unknown'),
+                        'velocity': play.get('release_speed', 0),
+                        'result': play.get('description', ''),
+                        'pitcher_name': play.get('pitcher_name', 'Unknown Pitcher'),
+                        'count': f"{play.get('balls', 0)}-{play.get('strikes', 0)}",
+                        'team_batting': team_type,
+                        'video_available': bool(play.get('play_id')),
+                        'batter_name': batter_name  # Add batter name to each pitch
+                    }
+                    
+                    at_bat_groups[at_bat_key]['pitches'].append(pitch_data)
+                    
+                    # Track the final result of the at-bat
+                    if play.get('events'):
+                        at_bat_groups[at_bat_key]['at_bat_result'] = play.get('events')
+                
+                # Now organize by half-inning
+                for at_bat_key, at_bat_data in at_bat_groups.items():
+                    inning = at_bat_data['inning']
                     half_inning_key = f"{inning_half}_{inning}"
                     
                     if half_inning_key not in organized_data['half_innings']:
@@ -641,44 +681,16 @@ class MLBHighlightGIFIntegration:
                             'at_bats': {}
                         }
                     
-                    # Group plays by at-bat (batter + at_bat_number if available)
-                    batter_name = play.get('batter_name', 'Unknown Batter')
-                    at_bat_number = play.get('at_bat_number', 0)
-                    at_bat_key = f"{batter_name}_{at_bat_number}"
+                    # Sort pitches by pitch number
+                    at_bat_data['pitches'].sort(key=lambda p: p.get('pitch_number', 0))
                     
-                    if at_bat_key not in organized_data['half_innings'][half_inning_key]['at_bats']:
-                        organized_data['half_innings'][half_inning_key]['at_bats'][at_bat_key] = {
-                            'batter_name': batter_name,
-                            'at_bat_number': at_bat_number,
-                            'result': play.get('events', 'In Progress'),
-                            'pitches': [],
-                            'final_play': None
-                        }
-                    
-                    # Add this play/pitch to the at-bat
-                    pitch_data = {
-                        'play_id': play.get('play_id'),
-                        'pitch_number': play.get('pitch_number', 1),
-                        'pitch_type': play.get('pitch_name', 'Unknown'),
-                        'velocity': play.get('release_speed', 0),
-                        'result': play.get('description', ''),
-                        'pitcher_name': play.get('pitcher_name', 'Unknown Pitcher'),
-                        'count': f"{play.get('balls', 0)}-{play.get('strikes', 0)}",
-                        'team_batting': team_type,
-                        'video_available': bool(play.get('play_id'))  # Has UUID = video available
+                    # Store the complete at-bat with all individual pitches
+                    organized_data['half_innings'][half_inning_key]['at_bats'][at_bat_key] = {
+                        'batter_name': at_bat_data['batter_name'],
+                        'result': at_bat_data['at_bat_result'] or 'In Progress',
+                        'pitches': at_bat_data['pitches'],  # Each pitch is individually accessible
+                        'pitch_count': len(at_bat_data['pitches'])
                     }
-                    
-                    organized_data['half_innings'][half_inning_key]['at_bats'][at_bat_key]['pitches'].append(pitch_data)
-                    
-                    # If this is the final pitch of the at-bat, mark it
-                    if play.get('events') and play.get('events') != '':
-                        organized_data['half_innings'][half_inning_key]['at_bats'][at_bat_key]['final_play'] = pitch_data
-                        organized_data['half_innings'][half_inning_key]['at_bats'][at_bat_key]['result'] = play.get('events')
-            
-            # Sort pitches within each at-bat by pitch number
-            for half_inning in organized_data['half_innings'].values():
-                for at_bat in half_inning['at_bats'].values():
-                    at_bat['pitches'].sort(key=lambda p: p.get('pitch_number', 0))
             
             total_pitches = sum(
                 len(at_bat['pitches']) 
@@ -686,7 +698,7 @@ class MLBHighlightGIFIntegration:
                 for at_bat in half_inning['at_bats'].values()
             )
             
-            logger.info(f"✅ Organized {total_pitches} pitches across {len(organized_data['half_innings'])} half-innings")
+            logger.info(f"✅ Organized {total_pitches} individual pitches across {len(organized_data['half_innings'])} half-innings")
             return organized_data
             
         except Exception as e:

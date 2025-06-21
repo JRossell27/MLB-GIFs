@@ -346,7 +346,7 @@ class MLBHighlightGIFIntegration:
                     '-referer', 'https://www.mlb.com/',
                     '-headers', 'Accept: video/mp4,video/*;q=0.9,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nConnection: keep-alive\r\n',
                     '-i', video_url,
-                    '-vf', 'fps=20,scale=640:-1:flags=lanczos,unsharp=0.25:0.25:1:0.25:0.25:1',  # Higher quality with sharpening
+                    '-vf', 'fps=20,scale=640:-1:flags=lanczos,unsharp=3:3:0.5:3:3:0.3',  # Higher quality with sharpening
                     '-loop', '0',
                     '-preset', 'slow',  # Better compression
                     '-crf', '18',       # High quality
@@ -440,7 +440,7 @@ class MLBHighlightGIFIntegration:
                 gif_cmd = [
                     'ffmpeg',
                     '-i', str(temp_video),
-                    '-vf', 'fps=20,scale=640:-1:flags=lanczos,unsharp=0.25:0.25:1:0.25:0.25:1',  # Higher quality with sharpening
+                    '-vf', 'fps=20,scale=640:-1:flags=lanczos,unsharp=3:3:0.5:3:3:0.3',  # Higher quality with sharpening
                     '-loop', '0',
                     '-preset', 'slow',  # Better compression
                     '-crf', '18',       # High quality
@@ -485,7 +485,7 @@ class MLBHighlightGIFIntegration:
                     'ffmpeg',
                     '-i', input_source,
                     '-t', '10',  # 10 second fallback
-                    '-vf', 'fps=18,scale=560:-1:flags=lanczos,unsharp=0.25:0.25:1:0.25:0.25:1',  # Better fallback quality with sharpening
+                    '-vf', 'fps=18,scale=560:-1:flags=lanczos,unsharp=3:3:0.5:3:3:0.3',  # Better fallback quality with sharpening
                     '-loop', '0',
                     '-preset', 'medium',  # Balanced compression for fallback
                     '-crf', '20',         # Good quality for fallback
@@ -502,7 +502,7 @@ class MLBHighlightGIFIntegration:
                         '-headers', 'Accept: video/mp4,video/*;q=0.9,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nConnection: keep-alive\r\n',
                         '-i', input_source,
                         '-t', '10',
-                        '-vf', 'fps=18,scale=560:-1:flags=lanczos,unsharp=0.25:0.25:1:0.25:0.25:1',
+                        '-vf', 'fps=18,scale=560:-1:flags=lanczos,unsharp=3:3:0.5:3:3:0.3',
                         '-loop', '0',
                         '-preset', 'medium',
                         '-crf', '20',

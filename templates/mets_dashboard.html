@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mets GIF Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #ff6b00 0%, #002d72 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 15px;
+            font-size: 14px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 15px;
+            backdrop-filter: blur(15px);
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 8px;
+            background: linear-gradient(45deg, #ff6b00, #002d72);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .mets-logo {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .control-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 0.9em;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #6c757d, #495057);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+        }
+
+        .game-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+            border-left: 4px solid #ff6b00;
+            backdrop-filter: blur(10px);
+            margin-bottom: 20px;
+            box-shadow: 0 0 15px rgba(255, 107, 0, 0.2);
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .game-teams {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            gap: 15px;
+        }
+
+        .team-name {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #ff6b00;
+        }
+
+        .team-name.mets {
+            color: #002d72;
+            text-shadow: 1px 1px 2px rgba(255, 107, 0, 0.5);
+        }
+
+        .score {
+            font-size: 1.6em;
+            font-weight: bold;
+            color: #ff6b00;
+        }
+
+        .pitch-section {
+            margin-bottom: 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 15px;
+        }
+
+        .pitch-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .pitch-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #ff6b00;
+        }
+
+        .pitch-data-container {
+            max-height: 600px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .pitch-item {
+            background: rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-left: 3px solid #ff6b00;
+            transition: all 0.3s ease;
+        }
+
+        .pitch-item:hover {
+            background: rgba(255,255,255,0.12);
+            transform: translateX(5px);
+        }
+
+        .pitch-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .pitch-details {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .pitch-type {
+            background: rgba(255, 107, 0, 0.2);
+            color: #ff6b00;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .pitch-velocity {
+            font-weight: bold;
+            color: #002d72;
+        }
+
+        .pitch-result {
+            font-size: 0.9em;
+            color: #ccc;
+        }
+
+        .pitch-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .create-pitch-gif-btn {
+            background: linear-gradient(45deg, #ff6b00, #002d72);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.3s ease;
+        }
+
+        .create-pitch-gif-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(255, 107, 0, 0.4);
+        }
+
+        .create-pitch-gif-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .no-games {
+            text-align: center;
+            padding: 40px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+
+        .no-games h3 {
+            color: #ff6b00;
+            margin-bottom: 10px;
+        }
+
+        /* Loading animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 107, 0, 0.3);
+            border-radius: 50%;
+            border-top-color: #ff6b00;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Toast notifications */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            border-left: 4px solid #ff6b00;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.error {
+            border-left-color: #dc3545;
+        }
+
+        .toast.success {
+            border-left-color: #28a745;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .game-teams {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .pitch-info {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .pitch-details {
+                width: 100%;
+            }
+
+            .pitch-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="mets-logo">🟠🔵</div>
+            <h1>New York Mets GIF Dashboard</h1>
+            <p>Live Pitch-by-Pitch Analysis & GIF Creation</p>
+        </div>
+
+        <div class="control-bar">
+            <a href="/" class="btn btn-secondary">← Back to All Games</a>
+            <button id="refreshBtn" class="btn btn-secondary">🔄 Refresh</button>
+        </div>
+
+        <div id="mets-game-container">
+            <div class="no-games">
+                <h3>Loading Mets Game...</h3>
+                <p>Please wait while we fetch today's Mets game data.</p>
+                <div class="loading"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let refreshInterval;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('refreshBtn').addEventListener('click', loadMetsGame);
+            loadMetsGame();
+            
+            // Auto-refresh every 30 seconds
+            refreshInterval = setInterval(loadMetsGame, 30000);
+        });
+
+        async function loadMetsGame() {
+            try {
+                const response = await fetch('/api/mets_game');
+                const data = await response.json();
+
+                const container = document.getElementById('mets-game-container');
+
+                if (!data.game) {
+                    container.innerHTML = `
+                        <div class="no-games">
+                            <h3>🗽 No Mets Game Today</h3>
+                            <p>The New York Mets don't have a game scheduled for today, or the game hasn't started yet.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const game = data.game;
+                const pitchData = data.pitch_data;
+
+                container.innerHTML = `
+                    <div class="game-card">
+                        <div class="game-header">
+                            <div class="game-teams">
+                                <div class="team-info">
+                                    <div class="team-name ${game.away_team === 'NYM' ? 'mets' : ''}">${game.away_team}</div>
+                                    <div class="score">${game.away_score}</div>
+                                </div>
+                                <div class="game-score-section">
+                                    <div class="inning">${game.inning_state}</div>
+                                    <div class="venue">${game.venue}</div>
+                                </div>
+                                <div class="team-info">
+                                    <div class="team-name ${game.home_team === 'NYM' ? 'mets' : ''}">${game.home_team}</div>
+                                    <div class="score">${game.home_score}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        ${generatePitchSections(pitchData)}
+                    </div>
+                `;
+
+                // Add event listeners for GIF creation buttons
+                document.querySelectorAll('.create-pitch-gif-btn').forEach(button => {
+                    button.addEventListener('click', handleCreatePitchGif);
+                });
+
+            } catch (error) {
+                console.error('Error loading Mets game:', error);
+                showToast('Error loading Mets game data', 'error');
+            }
+        }
+
+        function generatePitchSections(pitchData) {
+            if (!pitchData || !pitchData.half_innings) {
+                return '<div class="no-games"><h3>No pitch data available</h3></div>';
+            }
+
+            let html = '';
+            const sortedInnings = Object.keys(pitchData.half_innings).sort();
+
+            for (const inningKey of sortedInnings) {
+                const inning = pitchData.half_innings[inningKey];
+                html += `
+                    <div class="pitch-section">
+                        <div class="pitch-header">
+                            <div class="pitch-title">📊 ${inning.display_name}</div>
+                        </div>
+                        <div class="pitch-data-container">
+                `;
+
+                const atBats = Object.values(inning.at_bats);
+                for (const atBat of atBats) {
+                    for (const pitch of atBat.pitches) {
+                        html += `
+                            <div class="pitch-item">
+                                <div class="pitch-info">
+                                    <div class="pitch-details">
+                                        <strong>${pitch.batter_name}</strong>
+                                        <span class="pitch-type">${pitch.pitch_type}</span>
+                                        <span class="pitch-velocity">${pitch.velocity} mph</span>
+                                        <span class="pitch-result">${pitch.result}</span>
+                                    </div>
+                                    <div class="pitch-actions">
+                                        <button class="create-pitch-gif-btn" 
+                                                data-game-id="${pitchData.game_id}" 
+                                                data-play-id="${pitch.play_id}"
+                                                data-team-batting="${pitch.team_batting}"
+                                                ${!pitch.video_available ? 'disabled' : ''}>
+                                            ${pitch.video_available ? '🎬 Create GIF' : '❌ No Video'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+
+            return html;
+        }
+
+        async function handleCreatePitchGif(event) {
+            const button = event.target;
+            const gameId = button.dataset.gameId;
+            const playId = button.dataset.playId;
+            const teamBatting = button.dataset.teamBatting;
+
+            if (!playId) {
+                showToast('No video available for this pitch', 'error');
+                return;
+            }
+
+            // Disable button and show loading
+            button.disabled = true;
+            button.innerHTML = '<div class="loading"></div> Creating...';
+
+            try {
+                const response = await fetch('/api/create_pitch_gif', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        game_id: parseInt(gameId),
+                        play_id: playId,
+                        team_batting: teamBatting
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast('🎬 Mets pitch GIF created and sent!', 'success');
+                    button.innerHTML = '✅ Sent!';
+                    setTimeout(() => {
+                        button.innerHTML = '🎬 Create GIF';
+                        button.disabled = false;
+                    }, 3000);
+                } else {
+                    throw new Error(result.error || 'Failed to create GIF');
+                }
+            } catch (error) {
+                console.error('Error creating pitch GIF:', error);
+                showToast(`Error: ${error.message}`, 'error');
+                button.innerHTML = '❌ Failed';
+                setTimeout(() => {
+                    button.innerHTML = '🎬 Create GIF';
+                    button.disabled = false;
+                }, 3000);
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            // Remove existing toast
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+
+            // Create new toast
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            // Show toast
+            setTimeout(() => toast.classList.add('show'), 100);
+
+            // Hide toast after 4 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+    </script>
+</body>
+</html> 

@@ -366,7 +366,7 @@ class MLBHighlightGIFIntegration:
                     check=True, 
                     capture_output=True, 
                     text=True,
-                    timeout=60  # Increased timeout for higher quality processing
+                    timeout=120  # Extended timeout for ultra reliable processing
                 )
                 
                 logger.info("Enhanced quality GIF conversion completed successfully")
@@ -459,7 +459,7 @@ class MLBHighlightGIFIntegration:
                     check=True, 
                     capture_output=True, 
                     text=True,
-                    timeout=60  # Increased timeout for higher quality
+                    timeout=120  # Extended timeout for ultra reliable processing
                 )
                 
                 logger.info("Enhanced quality GIF conversion completed successfully")
@@ -509,7 +509,7 @@ class MLBHighlightGIFIntegration:
                     check=True, 
                     capture_output=True, 
                     text=True,
-                    timeout=40  # Longer timeout for fallback processing
+                    timeout=90  # Longer timeout for fallback processing
                 )
                 
                 file_size = Path(output_path).stat().st_size

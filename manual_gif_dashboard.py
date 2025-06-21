@@ -680,6 +680,11 @@ def index():
     """Main dashboard page"""
     return render_template('dashboard.html')
 
+@app.route('/mets')
+def mets_dashboard():
+    """Dedicated Mets dashboard page"""
+    return render_template('mets_dashboard.html')
+
 @app.route('/api/games')
 def api_games():
     """Get all games with their plays and video availability info"""
@@ -1025,6 +1030,41 @@ def api_create_pitch_gif():
         return jsonify({
             "success": False, 
             "error": f"Error creating pitch GIF: {str(e)}"
+        }), 500
+
+@app.route('/api/mets_game')
+def api_mets_game():
+    """Get current Mets game and pitch data"""
+    try:
+        # Find today's Mets game
+        mets_game = None
+        for game in dashboard.games.values():
+            if game.home_team == 'NYM' or game.away_team == 'NYM':
+                mets_game = game
+                break
+        
+        if not mets_game:
+            return jsonify({
+                'success': True,
+                'game': None,
+                'pitch_data': None,
+                'message': 'No Mets game found for today'
+            })
+        
+        # Get detailed pitch data for the Mets game
+        pitch_data = dashboard.gif_integration.get_detailed_game_data(mets_game.game_id)
+        
+        return jsonify({
+            'success': True,
+            'game': mets_game.to_dict(),
+            'pitch_data': pitch_data
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting Mets game data: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
         }), 500
 
 if __name__ == '__main__':

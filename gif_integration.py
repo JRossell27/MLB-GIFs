@@ -339,7 +339,7 @@ class MLBHighlightGIFIntegration:
                         logger.warning(f"Could not parse duration '{highlight_duration}', using full video")
                         duration_seconds = None
                 
-                # Build ffmpeg command for HLS input - ENHANCED QUALITY APPROACH
+                # Build ffmpeg command for HLS input - SIMPLIFIED HIGH QUALITY APPROACH
                 gif_cmd = [
                     'ffmpeg',
                     '-user_agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -347,7 +347,7 @@ class MLBHighlightGIFIntegration:
                     '-headers', 'Accept: video/mp4,video/*;q=0.9,*/*;q=0.8\\r\\nAccept-Language: en-US,en;q=0.5\\r\\nConnection: keep-alive\\r\\n',
                     '-i', video_url,
                     '-t', '10',  # Keep duration short for speed
-                    '-vf', 'fps=24,scale=720:-1:flags=lanczos,unsharp=5:5:1.0:3:3:0.6',  # High quality 720p
+                    '-vf', 'fps=24,scale=1080:-1:flags=lanczos',  # Simple high-quality scaling, no heavy processing
                     '-loop', '0',
                     '-y',
                     output_path
@@ -366,10 +366,10 @@ class MLBHighlightGIFIntegration:
                     check=True, 
                     capture_output=True, 
                     text=True,
-                    timeout=180  # Very generous 3 minute timeout for ultra reliability
+                    timeout=180  # 3 minute timeout for safety
                 )
                 
-                logger.info("Enhanced quality GIF conversion completed successfully")
+                logger.info("Simplified high-quality GIF conversion completed successfully")
                 
             else:
                 # For direct video files, download first then convert
@@ -432,15 +432,15 @@ class MLBHighlightGIFIntegration:
                         logger.warning(f"Could not parse duration '{highlight_duration}', using full video")
                         duration_seconds = None
                 
-                # Convert to GIF using enhanced quality approach
-                logger.info("Converting to GIF with enhanced quality...")
+                # Convert to GIF using simplified quality approach
+                logger.info("Converting to GIF with simplified high quality...")
                 
-                # Enhanced single-pass GIF conversion
+                # Simplified single-pass GIF conversion
                 gif_cmd = [
                     'ffmpeg',
                     '-i', str(temp_video),
                     '-t', '10',  # Keep duration short for speed
-                    '-vf', 'fps=24,scale=720:-1:flags=lanczos,unsharp=5:5:1.0:3:3:0.6',  # High quality 720p
+                    '-vf', 'fps=24,scale=1080:-1:flags=lanczos',  # Simple high-quality scaling, no heavy processing
                     '-loop', '0',
                     '-y',
                     output_path
@@ -459,10 +459,10 @@ class MLBHighlightGIFIntegration:
                     check=True, 
                     capture_output=True, 
                     text=True,
-                    timeout=180  # Very generous 3 minute timeout for ultra reliability
+                    timeout=180  # 3 minute timeout for safety
                 )
                 
-                logger.info("Enhanced quality GIF conversion completed successfully")
+                logger.info("Simplified high-quality GIF conversion completed successfully")
             
             # Check if output file was created
             if not Path(output_path).exists():
@@ -488,7 +488,7 @@ class MLBHighlightGIFIntegration:
                         '-headers', 'Accept: video/mp4,video/*;q=0.9,*/*;q=0.8\\r\\nAccept-Language: en-US,en;q=0.5\\r\\nConnection: keep-alive\\r\\n',
                         '-i', input_source,
                         '-t', '8',  # Shorter duration
-                        '-vf', 'fps=20,scale=600:-1:flags=lanczos,unsharp=3:3:0.8:3:3:0.5',  # Moderate quality fallback
+                        '-vf', 'fps=20,scale=720:-1:flags=lanczos',  # Simple scaling fallback
                         '-loop', '0',
                         '-y',
                         output_path
@@ -498,7 +498,7 @@ class MLBHighlightGIFIntegration:
                         'ffmpeg',
                         '-i', input_source,
                         '-t', '8',  # Shorter duration
-                        '-vf', 'fps=20,scale=600:-1:flags=lanczos,unsharp=3:3:0.8:3:3:0.5',  # Moderate quality fallback
+                        '-vf', 'fps=20,scale=720:-1:flags=lanczos',  # Simple scaling fallback
                         '-loop', '0',
                         '-y',
                         output_path
@@ -509,7 +509,7 @@ class MLBHighlightGIFIntegration:
                     check=True, 
                     capture_output=True, 
                     text=True,
-                    timeout=120  # Still generous 2 minute timeout for fallback
+                    timeout=120  # 2 minute timeout for fallback
                 )
                 
                 file_size = Path(output_path).stat().st_size

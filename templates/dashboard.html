@@ -256,27 +256,26 @@
 
         .team-matchup {
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
             margin-bottom: 20px;
-            padding: 0 20px;
+            padding: 0 15px;
+            gap: 30px;
         }
 
-        .team-info {
+        .team-section {
             display: flex;
             align-items: center;
-            gap: 15px;
-            flex: 1;
+            gap: 12px;
+            min-width: 140px;
         }
 
-        .team-info:first-child {
-            justify-content: flex-start;
-        }
-
-        .team-info:last-child {
+        .team-section.away {
             justify-content: flex-end;
-            flex-direction: row-reverse;
-            gap: 15px;
+        }
+
+        .team-section.home {
+            justify-content: flex-start;
         }
 
         .team-logo {
@@ -292,41 +291,33 @@
             flex-shrink: 0;
         }
 
-        .team-details {
+        .team-content {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
-            min-width: 80px;
-        }
-
-        .team-info:first-child .team-details {
-            align-items: flex-start;
-        }
-
-        .team-info:last-child .team-details {
-            align-items: flex-end;
+            text-align: center;
+            min-width: 60px;
         }
 
         .team-name {
-            font-size: 1.2em;
+            font-size: 1.1em;
             font-weight: bold;
             line-height: 1;
+            margin-bottom: 4px;
         }
 
         .team-score {
-            font-size: 2.2em;
+            font-size: 2.4em;
             font-weight: bold;
             color: #00d4ff;
-            line-height: 1;
+            line-height: 0.9;
         }
 
         .vs-divider {
-            font-size: 1.8em;
+            font-size: 1.6em;
             opacity: 0.6;
-            margin: 0 25px;
-            flex-shrink: 0;
             font-weight: bold;
+            flex-shrink: 0;
         }
 
         .game-details {
@@ -689,7 +680,7 @@
                 padding: 0;
             }
 
-            .team-info:last-child {
+            .team-section:last-child {
                 flex-direction: row;
             }
 
@@ -868,9 +859,9 @@
                     
                     <div class="game-header">
                         <div class="team-matchup">
-                            <div class="team-info">
+                            <div class="team-section away">
                                 <div class="team-logo">${game.away_team}</div>
-                                <div class="team-details">
+                                <div class="team-content">
                                     <div class="team-name">${game.away_team}</div>
                                     <div class="team-score">${game.away_score}</div>
                                 </div>
@@ -878,9 +869,9 @@
                             
                             <div class="vs-divider">@</div>
                             
-                            <div class="team-info">
+                            <div class="team-section home">
                                 <div class="team-logo">${game.home_team}</div>
-                                <div class="team-details">
+                                <div class="team-content">
                                     <div class="team-name">${game.home_team}</div>
                                     <div class="team-score">${game.home_score}</div>
                                 </div>

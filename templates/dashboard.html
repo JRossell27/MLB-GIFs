@@ -259,13 +259,13 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
-            padding: 0 10px;
+            padding: 0 20px;
         }
 
         .team-info {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 15px;
             flex: 1;
         }
 
@@ -276,6 +276,7 @@
         .team-info:last-child {
             justify-content: flex-end;
             flex-direction: row-reverse;
+            gap: 15px;
         }
 
         .team-logo {
@@ -291,23 +292,41 @@
             flex-shrink: 0;
         }
 
+        .team-details {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            min-width: 80px;
+        }
+
+        .team-info:first-child .team-details {
+            align-items: flex-start;
+        }
+
+        .team-info:last-child .team-details {
+            align-items: flex-end;
+        }
+
         .team-name {
             font-size: 1.2em;
             font-weight: bold;
-            margin-bottom: 4px;
+            line-height: 1;
         }
 
         .team-score {
-            font-size: 1.8em;
+            font-size: 2.2em;
             font-weight: bold;
             color: #00d4ff;
+            line-height: 1;
         }
 
         .vs-divider {
-            font-size: 1.5em;
+            font-size: 1.8em;
             opacity: 0.6;
-            margin: 0 20px;
+            margin: 0 25px;
             flex-shrink: 0;
+            font-weight: bold;
         }
 
         .game-details {
@@ -851,7 +870,7 @@
                         <div class="team-matchup">
                             <div class="team-info">
                                 <div class="team-logo">${game.away_team}</div>
-                                <div>
+                                <div class="team-details">
                                     <div class="team-name">${game.away_team}</div>
                                     <div class="team-score">${game.away_score}</div>
                                 </div>
@@ -861,7 +880,7 @@
                             
                             <div class="team-info">
                                 <div class="team-logo">${game.home_team}</div>
-                                <div>
+                                <div class="team-details">
                                     <div class="team-name">${game.home_team}</div>
                                     <div class="team-score">${game.home_score}</div>
                                 </div>

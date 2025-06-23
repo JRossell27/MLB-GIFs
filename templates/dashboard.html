@@ -1108,7 +1108,7 @@
                         const [bHalf, bInning] = b[0].split('_');
                         const inningDiff = parseInt(aInning) - parseInt(bInning);
                         if (inningDiff !== 0) return inningDiff;
-                        return aHalf === 'top' ? -1 : 1;
+                        return aHalf === 'top' ? -1 : 1; // top comes before bottom
                     });
                     
                     sortedHalfInnings.forEach(([halfInningKey, halfInning]) => {

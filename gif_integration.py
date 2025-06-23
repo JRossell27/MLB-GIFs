@@ -623,11 +623,11 @@ class MLBHighlightGIFIntegration:
             
             # Process both home and away team data
             # IMPORTANT: Baseball Savant data structure is inverted!
-            # - team_home data contains pitches when AWAY team is batting
-            # - team_away data contains pitches when HOME team is batting
+            # - team_home data contains pitches when AWAY team is batting (top half-inning)
+            # - team_away data contains pitches when HOME team is batting (bottom half-inning)
             teams_data = [
-                (data.get('team_home', []), 'home', 'bottom'),  # home data source
-                (data.get('team_away', []), 'away', 'top')      # away data source
+                (data.get('team_home', []), 'home', 'top'),    # home data source = away team batting = top half
+                (data.get('team_away', []), 'away', 'bottom')  # away data source = home team batting = bottom half
             ]
             
             for team_plays, team_type, inning_half in teams_data:

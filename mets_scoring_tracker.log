@@ -1,0 +1,216 @@
+2025-06-23 18:29:42,016 - __main__ - INFO - ✅ Mets Scoring Plays tracker initialized
+2025-06-23 18:29:42,016 - __main__ - INFO - 🎯 Started Mets scoring plays monitoring
+2025-06-23 18:29:42,017 - __main__ - INFO - 🎯 Mets scoring plays tracker started successfully
+2025-06-23 18:29:42,540 - __main__ - INFO - 🔍 Checking 1 Mets games for scoring plays...
+2025-06-23 18:29:42,878 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Home Run by Francisco Lindor (1 runs)
+2025-06-23 18:29:42,878 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Single by Brandon Nimmo (1 runs)
+2025-06-23 18:29:42,879 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Walk by J.D. Martinez (1 runs)
+2025-06-23 18:29:42,879 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Home Run by Pete Alonso (4 runs)
+2025-06-23 18:29:42,879 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Walk by Starling Marte (4 runs)
+2025-06-23 18:29:42,879 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Strikeout by Mark Vientos (4 runs)
+2025-06-23 18:29:42,879 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Strikeout by Luis Torrens (4 runs)
+2025-06-23 18:29:42,879 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Pop Out by Jeff McNeil (4 runs)
+2025-06-23 18:29:42,879 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Strikeout by Harrison Bader (4 runs)
+2025-06-23 18:29:42,879 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Lineout by Francisco Lindor (4 runs)
+2025-06-23 18:29:42,879 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Flyout by Brandon Nimmo (4 runs)
+2025-06-23 18:29:42,879 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Walk by J.D. Martinez (4 runs)
+2025-06-23 18:29:42,879 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Strikeout by Pete Alonso (4 runs)
+2025-06-23 18:29:42,879 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Flyout by Starling Marte (4 runs)
+2025-06-23 18:29:42,879 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Strikeout by Mark Vientos (4 runs)
+2025-06-23 18:29:42,879 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Single by Luis Torrens (4 runs)
+2025-06-23 18:29:42,879 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Flyout by Jeff McNeil (4 runs)
+2025-06-23 18:29:42,879 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Double by Harrison Bader (5 runs)
+2025-06-23 18:29:42,879 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Sac Fly by Francisco Lindor (6 runs)
+2025-06-23 18:29:42,879 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Single by Brandon Nimmo (6 runs)
+2025-06-23 18:29:42,879 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Double by J.D. Martinez (7 runs)
+2025-06-23 18:29:42,879 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Flyout by Pete Alonso (7 runs)
+2025-06-23 18:29:42,879 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Strikeout by Starling Marte (7 runs)
+2025-06-23 18:29:42,879 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Single by Mark Vientos (7 runs)
+2025-06-23 18:29:42,879 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Flyout by Luis Torrens (7 runs)
+2025-06-23 18:29:42,879 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Flyout by Jeff McNeil (7 runs)
+2025-06-23 18:29:42,880 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Groundout by Harrison Bader (7 runs)
+2025-06-23 18:29:42,880 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Groundout by Francisco Lindor (7 runs)
+2025-06-23 18:29:42,880 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Groundout by Brandon Nimmo (7 runs)
+2025-06-23 18:29:42,880 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Single by J.D. Martinez (7 runs)
+2025-06-23 18:29:42,880 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Forceout by Pete Alonso (7 runs)
+2025-06-23 18:29:42,880 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Strikeout by Starling Marte (7 runs)
+2025-06-23 18:29:42,880 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Strikeout by Mark Vientos (7 runs)
+2025-06-23 18:29:42,880 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Home Run by Luis Torrens (8 runs)
+2025-06-23 18:29:42,880 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Double by Jeff McNeil (8 runs)
+2025-06-23 18:29:42,880 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Single by Harrison Bader (8 runs)
+2025-06-23 18:29:42,880 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Walk by Francisco Lindor (8 runs)
+2025-06-23 18:29:42,880 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Single by Brandon Nimmo (9 runs)
+2025-06-23 18:29:42,880 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Strikeout by J.D. Martinez (9 runs)
+2025-06-23 18:29:42,880 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Single by Pete Alonso (11 runs)
+2025-06-23 18:29:42,880 - __main__ - INFO - 🎯 NEW METS SCORING PLAY: Grounded Into DP by Starling Marte (11 runs)
+2025-06-23 18:29:42,880 - __main__ - INFO - 🔍 Scanned game 745807 - found 41 new Mets scoring plays
+2025-06-23 18:29:43,065 - __main__ - INFO - 💓 Keep-alive ping successful
+2025-06-23 18:29:43,065 - __main__ - INFO - ⏰ Waiting 2 minutes before next Mets scoring check...
+2025-06-23 18:29:47,019 - __main__ - INFO - 🎬 Processing Mets scoring play: Home Run
+2025-06-23 18:29:47,020 - gif_integration - INFO - Creating GIF for play - game 745807, play 6
+2025-06-23 18:29:47,020 - gif_integration - INFO - 🎯 Trying Baseball Savant individual play video...
+2025-06-23 18:29:51,793 - gif_integration - INFO - Found 342 plays from Baseball Savant
+2025-06-23 18:29:51,793 - gif_integration - INFO - Looking for play:  -  (Inning None)
+2025-06-23 18:29:51,793 - gif_integration - INFO - Using first available play as fallback
+2025-06-23 18:29:51,793 - gif_integration - INFO - Testing video URL: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:29:52,142 - gif_integration - INFO - ✅ Found working Baseball Savant video: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:29:52,145 - gif_integration - INFO - ✅ Found Baseball Savant play video, creating GIF...
+2025-06-23 18:29:52,145 - gif_integration - INFO - Downloading video from: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:29:52,145 - gif_integration - INFO - Processing HLS stream directly with ffmpeg...
+2025-06-23 18:29:52,348 - gif_integration - INFO - HLS stream test: 200
+2025-06-23 18:29:52,348 - gif_integration - INFO - Using 10 second limit for fast processing
+2025-06-23 18:29:56,666 - gif_integration - INFO - Simplified high-quality GIF conversion completed successfully
+2025-06-23 18:29:56,667 - gif_integration - INFO - ✅ Successfully created GIF: /var/folders/bd/rj5hj5tx331c_s76rsr4139w0000gp/T/mlb_gifs/mlb_savant_home_run_745807_6_20250623_182952.gif (16.0MB)
+2025-06-23 18:29:56,667 - gif_integration - INFO - ✅ Successfully created Baseball Savant GIF: /var/folders/bd/rj5hj5tx331c_s76rsr4139w0000gp/T/mlb_gifs/mlb_savant_home_run_745807_6_20250623_182952.gif
+2025-06-23 18:29:56,668 - __main__ - ERROR - ❌ Failed to send Mets scoring play GIF
+2025-06-23 18:29:56,668 - __main__ - INFO - 🎬 Processing Mets scoring play: Single
+2025-06-23 18:29:56,668 - gif_integration - INFO - Creating GIF for play - game 745807, play 7
+2025-06-23 18:29:56,668 - gif_integration - INFO - 🎯 Trying Baseball Savant individual play video...
+2025-06-23 18:29:56,881 - gif_integration - INFO - Found 342 plays from Baseball Savant
+2025-06-23 18:29:56,881 - gif_integration - INFO - Looking for play:  -  (Inning None)
+2025-06-23 18:29:56,883 - gif_integration - INFO - Using first available play as fallback
+2025-06-23 18:29:56,883 - gif_integration - INFO - Testing video URL: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:29:57,065 - gif_integration - INFO - ✅ Found working Baseball Savant video: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:29:57,068 - gif_integration - INFO - ✅ Found Baseball Savant play video, creating GIF...
+2025-06-23 18:29:57,068 - gif_integration - INFO - Downloading video from: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:29:57,068 - gif_integration - INFO - Processing HLS stream directly with ffmpeg...
+2025-06-23 18:29:57,253 - gif_integration - INFO - HLS stream test: 200
+2025-06-23 18:29:57,254 - gif_integration - INFO - Using 10 second limit for fast processing
+2025-06-23 18:30:00,231 - gif_integration - INFO - Simplified high-quality GIF conversion completed successfully
+2025-06-23 18:30:00,231 - gif_integration - INFO - ✅ Successfully created GIF: /var/folders/bd/rj5hj5tx331c_s76rsr4139w0000gp/T/mlb_gifs/mlb_savant_single_745807_7_20250623_182957.gif (16.0MB)
+2025-06-23 18:30:00,231 - gif_integration - INFO - ✅ Successfully created Baseball Savant GIF: /var/folders/bd/rj5hj5tx331c_s76rsr4139w0000gp/T/mlb_gifs/mlb_savant_single_745807_7_20250623_182957.gif
+2025-06-23 18:30:00,234 - __main__ - ERROR - ❌ Failed to send Mets scoring play GIF
+2025-06-23 18:30:00,234 - __main__ - INFO - 🎬 Processing Mets scoring play: Walk
+2025-06-23 18:30:00,234 - gif_integration - INFO - Creating GIF for play - game 745807, play 8
+2025-06-23 18:30:00,234 - gif_integration - INFO - 🎯 Trying Baseball Savant individual play video...
+2025-06-23 18:30:00,452 - gif_integration - INFO - Found 342 plays from Baseball Savant
+2025-06-23 18:30:00,453 - gif_integration - INFO - Looking for play:  -  (Inning None)
+2025-06-23 18:30:00,453 - gif_integration - INFO - Using first available play as fallback
+2025-06-23 18:30:00,453 - gif_integration - INFO - Testing video URL: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:30:00,623 - gif_integration - INFO - ✅ Found working Baseball Savant video: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:30:00,625 - gif_integration - INFO - ✅ Found Baseball Savant play video, creating GIF...
+2025-06-23 18:30:00,626 - gif_integration - INFO - Downloading video from: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:30:00,626 - gif_integration - INFO - Processing HLS stream directly with ffmpeg...
+2025-06-23 18:30:00,784 - gif_integration - INFO - HLS stream test: 200
+2025-06-23 18:30:00,785 - gif_integration - INFO - Using 10 second limit for fast processing
+2025-06-23 18:30:03,881 - gif_integration - INFO - Simplified high-quality GIF conversion completed successfully
+2025-06-23 18:30:03,882 - gif_integration - INFO - ✅ Successfully created GIF: /var/folders/bd/rj5hj5tx331c_s76rsr4139w0000gp/T/mlb_gifs/mlb_savant_walk_745807_8_20250623_183000.gif (16.0MB)
+2025-06-23 18:30:03,883 - gif_integration - INFO - ✅ Successfully created Baseball Savant GIF: /var/folders/bd/rj5hj5tx331c_s76rsr4139w0000gp/T/mlb_gifs/mlb_savant_walk_745807_8_20250623_183000.gif
+2025-06-23 18:30:03,883 - __main__ - ERROR - ❌ Failed to send Mets scoring play GIF
+2025-06-23 18:30:03,883 - __main__ - INFO - 🎬 Processing Mets scoring play: Home Run
+2025-06-23 18:30:03,883 - gif_integration - INFO - Creating GIF for play - game 745807, play 9
+2025-06-23 18:30:03,883 - gif_integration - INFO - 🎯 Trying Baseball Savant individual play video...
+2025-06-23 18:30:04,111 - gif_integration - INFO - Found 342 plays from Baseball Savant
+2025-06-23 18:30:04,111 - gif_integration - INFO - Looking for play:  -  (Inning None)
+2025-06-23 18:30:04,111 - gif_integration - INFO - Using first available play as fallback
+2025-06-23 18:30:04,111 - gif_integration - INFO - Testing video URL: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:30:04,279 - gif_integration - INFO - ✅ Found working Baseball Savant video: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:30:04,281 - gif_integration - INFO - ✅ Found Baseball Savant play video, creating GIF...
+2025-06-23 18:30:04,281 - gif_integration - INFO - Downloading video from: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:30:04,281 - gif_integration - INFO - Processing HLS stream directly with ffmpeg...
+2025-06-23 18:30:04,433 - gif_integration - INFO - HLS stream test: 200
+2025-06-23 18:30:04,434 - gif_integration - INFO - Using 10 second limit for fast processing
+2025-06-23 18:30:07,387 - gif_integration - INFO - Simplified high-quality GIF conversion completed successfully
+2025-06-23 18:30:07,387 - gif_integration - INFO - ✅ Successfully created GIF: /var/folders/bd/rj5hj5tx331c_s76rsr4139w0000gp/T/mlb_gifs/mlb_savant_home_run_745807_9_20250623_183004.gif (16.0MB)
+2025-06-23 18:30:07,388 - gif_integration - INFO - ✅ Successfully created Baseball Savant GIF: /var/folders/bd/rj5hj5tx331c_s76rsr4139w0000gp/T/mlb_gifs/mlb_savant_home_run_745807_9_20250623_183004.gif
+2025-06-23 18:30:07,388 - __main__ - ERROR - ❌ Failed to send Mets scoring play GIF
+2025-06-23 18:30:07,389 - __main__ - INFO - 🎬 Processing Mets scoring play: Walk
+2025-06-23 18:30:07,389 - gif_integration - INFO - Creating GIF for play - game 745807, play 10
+2025-06-23 18:30:07,389 - gif_integration - INFO - 🎯 Trying Baseball Savant individual play video...
+2025-06-23 18:30:07,640 - gif_integration - INFO - Found 342 plays from Baseball Savant
+2025-06-23 18:30:07,640 - gif_integration - INFO - Looking for play:  -  (Inning None)
+2025-06-23 18:30:07,640 - gif_integration - INFO - Using first available play as fallback
+2025-06-23 18:30:07,640 - gif_integration - INFO - Testing video URL: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:30:07,820 - gif_integration - INFO - ✅ Found working Baseball Savant video: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:30:07,822 - gif_integration - INFO - ✅ Found Baseball Savant play video, creating GIF...
+2025-06-23 18:30:07,822 - gif_integration - INFO - Downloading video from: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:30:07,822 - gif_integration - INFO - Processing HLS stream directly with ffmpeg...
+2025-06-23 18:30:07,983 - gif_integration - INFO - HLS stream test: 200
+2025-06-23 18:30:07,984 - gif_integration - INFO - Using 10 second limit for fast processing
+2025-06-23 18:30:11,048 - gif_integration - INFO - Simplified high-quality GIF conversion completed successfully
+2025-06-23 18:30:11,048 - gif_integration - INFO - ✅ Successfully created GIF: /var/folders/bd/rj5hj5tx331c_s76rsr4139w0000gp/T/mlb_gifs/mlb_savant_walk_745807_10_20250623_183007.gif (16.0MB)
+2025-06-23 18:30:11,049 - gif_integration - INFO - ✅ Successfully created Baseball Savant GIF: /var/folders/bd/rj5hj5tx331c_s76rsr4139w0000gp/T/mlb_gifs/mlb_savant_walk_745807_10_20250623_183007.gif
+2025-06-23 18:30:11,051 - __main__ - ERROR - ❌ Failed to send Mets scoring play GIF
+2025-06-23 18:30:11,051 - __main__ - INFO - 🎬 Processing Mets scoring play: Strikeout
+2025-06-23 18:30:11,051 - gif_integration - INFO - Creating GIF for play - game 745807, play 11
+2025-06-23 18:30:11,051 - gif_integration - INFO - 🎯 Trying Baseball Savant individual play video...
+2025-06-23 18:30:11,273 - gif_integration - INFO - Found 342 plays from Baseball Savant
+2025-06-23 18:30:11,273 - gif_integration - INFO - Looking for play:  -  (Inning None)
+2025-06-23 18:30:11,273 - gif_integration - INFO - Using first available play as fallback
+2025-06-23 18:30:11,273 - gif_integration - INFO - Testing video URL: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:30:11,417 - gif_integration - INFO - ✅ Found working Baseball Savant video: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:30:11,418 - gif_integration - INFO - ✅ Found Baseball Savant play video, creating GIF...
+2025-06-23 18:30:11,418 - gif_integration - INFO - Downloading video from: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:30:11,418 - gif_integration - INFO - Processing HLS stream directly with ffmpeg...
+2025-06-23 18:30:11,574 - gif_integration - INFO - HLS stream test: 200
+2025-06-23 18:30:11,574 - gif_integration - INFO - Using 10 second limit for fast processing
+2025-06-23 18:30:14,627 - gif_integration - INFO - Simplified high-quality GIF conversion completed successfully
+2025-06-23 18:30:14,627 - gif_integration - INFO - ✅ Successfully created GIF: /var/folders/bd/rj5hj5tx331c_s76rsr4139w0000gp/T/mlb_gifs/mlb_savant_strikeout_745807_11_20250623_183011.gif (16.0MB)
+2025-06-23 18:30:14,628 - gif_integration - INFO - ✅ Successfully created Baseball Savant GIF: /var/folders/bd/rj5hj5tx331c_s76rsr4139w0000gp/T/mlb_gifs/mlb_savant_strikeout_745807_11_20250623_183011.gif
+2025-06-23 18:30:14,628 - __main__ - ERROR - ❌ Failed to send Mets scoring play GIF
+2025-06-23 18:30:14,628 - __main__ - INFO - 🎬 Processing Mets scoring play: Strikeout
+2025-06-23 18:30:14,628 - gif_integration - INFO - Creating GIF for play - game 745807, play 12
+2025-06-23 18:30:14,628 - gif_integration - INFO - 🎯 Trying Baseball Savant individual play video...
+2025-06-23 18:30:14,832 - gif_integration - INFO - Found 342 plays from Baseball Savant
+2025-06-23 18:30:14,832 - gif_integration - INFO - Looking for play:  -  (Inning None)
+2025-06-23 18:30:14,832 - gif_integration - INFO - Using first available play as fallback
+2025-06-23 18:30:14,832 - gif_integration - INFO - Testing video URL: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:30:14,986 - gif_integration - INFO - ✅ Found working Baseball Savant video: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:30:14,988 - gif_integration - INFO - ✅ Found Baseball Savant play video, creating GIF...
+2025-06-23 18:30:14,988 - gif_integration - INFO - Downloading video from: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:30:14,988 - gif_integration - INFO - Processing HLS stream directly with ffmpeg...
+2025-06-23 18:30:15,168 - gif_integration - INFO - HLS stream test: 200
+2025-06-23 18:30:15,168 - gif_integration - INFO - Using 10 second limit for fast processing
+2025-06-23 18:30:18,086 - gif_integration - INFO - Simplified high-quality GIF conversion completed successfully
+2025-06-23 18:30:18,087 - gif_integration - INFO - ✅ Successfully created GIF: /var/folders/bd/rj5hj5tx331c_s76rsr4139w0000gp/T/mlb_gifs/mlb_savant_strikeout_745807_12_20250623_183014.gif (16.0MB)
+2025-06-23 18:30:18,087 - gif_integration - INFO - ✅ Successfully created Baseball Savant GIF: /var/folders/bd/rj5hj5tx331c_s76rsr4139w0000gp/T/mlb_gifs/mlb_savant_strikeout_745807_12_20250623_183014.gif
+2025-06-23 18:30:18,088 - __main__ - ERROR - ❌ Failed to send Mets scoring play GIF
+2025-06-23 18:30:18,088 - __main__ - INFO - 🎬 Processing Mets scoring play: Pop Out
+2025-06-23 18:30:18,088 - gif_integration - INFO - Creating GIF for play - game 745807, play 13
+2025-06-23 18:30:18,088 - gif_integration - INFO - 🎯 Trying Baseball Savant individual play video...
+2025-06-23 18:30:18,290 - gif_integration - INFO - Found 342 plays from Baseball Savant
+2025-06-23 18:30:18,290 - gif_integration - INFO - Looking for play:  -  (Inning None)
+2025-06-23 18:30:18,290 - gif_integration - INFO - Using first available play as fallback
+2025-06-23 18:30:18,290 - gif_integration - INFO - Testing video URL: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:30:18,436 - gif_integration - INFO - ✅ Found working Baseball Savant video: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:30:18,438 - gif_integration - INFO - ✅ Found Baseball Savant play video, creating GIF...
+2025-06-23 18:30:18,438 - gif_integration - INFO - Downloading video from: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:30:18,438 - gif_integration - INFO - Processing HLS stream directly with ffmpeg...
+2025-06-23 18:30:18,578 - gif_integration - INFO - HLS stream test: 200
+2025-06-23 18:30:18,578 - gif_integration - INFO - Using 10 second limit for fast processing
+2025-06-23 18:30:21,526 - gif_integration - INFO - Simplified high-quality GIF conversion completed successfully
+2025-06-23 18:30:21,526 - gif_integration - INFO - ✅ Successfully created GIF: /var/folders/bd/rj5hj5tx331c_s76rsr4139w0000gp/T/mlb_gifs/mlb_savant_pop_out_745807_13_20250623_183018.gif (16.0MB)
+2025-06-23 18:30:21,527 - gif_integration - INFO - ✅ Successfully created Baseball Savant GIF: /var/folders/bd/rj5hj5tx331c_s76rsr4139w0000gp/T/mlb_gifs/mlb_savant_pop_out_745807_13_20250623_183018.gif
+2025-06-23 18:30:21,528 - __main__ - ERROR - ❌ Failed to send Mets scoring play GIF
+2025-06-23 18:30:21,528 - __main__ - INFO - 🎬 Processing Mets scoring play: Strikeout
+2025-06-23 18:30:21,528 - gif_integration - INFO - Creating GIF for play - game 745807, play 18
+2025-06-23 18:30:21,528 - gif_integration - INFO - 🎯 Trying Baseball Savant individual play video...
+2025-06-23 18:30:21,740 - gif_integration - INFO - Found 342 plays from Baseball Savant
+2025-06-23 18:30:21,740 - gif_integration - INFO - Looking for play:  -  (Inning None)
+2025-06-23 18:30:21,740 - gif_integration - INFO - Using first available play as fallback
+2025-06-23 18:30:21,741 - gif_integration - INFO - Testing video URL: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:30:21,909 - gif_integration - INFO - ✅ Found working Baseball Savant video: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:30:21,911 - gif_integration - INFO - ✅ Found Baseball Savant play video, creating GIF...
+2025-06-23 18:30:21,911 - gif_integration - INFO - Downloading video from: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:30:21,911 - gif_integration - INFO - Processing HLS stream directly with ffmpeg...
+2025-06-23 18:30:22,151 - gif_integration - INFO - HLS stream test: 200
+2025-06-23 18:30:22,151 - gif_integration - INFO - Using 10 second limit for fast processing
+2025-06-23 18:30:25,092 - gif_integration - INFO - Simplified high-quality GIF conversion completed successfully
+2025-06-23 18:30:25,092 - gif_integration - INFO - ✅ Successfully created GIF: /var/folders/bd/rj5hj5tx331c_s76rsr4139w0000gp/T/mlb_gifs/mlb_savant_strikeout_745807_18_20250623_183021.gif (16.0MB)
+2025-06-23 18:30:25,093 - gif_integration - INFO - ✅ Successfully created Baseball Savant GIF: /var/folders/bd/rj5hj5tx331c_s76rsr4139w0000gp/T/mlb_gifs/mlb_savant_strikeout_745807_18_20250623_183021.gif
+2025-06-23 18:30:25,093 - __main__ - ERROR - ❌ Failed to send Mets scoring play GIF
+2025-06-23 18:30:25,093 - __main__ - INFO - 🎬 Processing Mets scoring play: Lineout
+2025-06-23 18:30:25,094 - gif_integration - INFO - Creating GIF for play - game 745807, play 19
+2025-06-23 18:30:25,094 - gif_integration - INFO - 🎯 Trying Baseball Savant individual play video...
+2025-06-23 18:30:25,283 - gif_integration - INFO - Found 342 plays from Baseball Savant
+2025-06-23 18:30:25,284 - gif_integration - INFO - Looking for play:  -  (Inning None)
+2025-06-23 18:30:25,284 - gif_integration - INFO - Using first available play as fallback
+2025-06-23 18:30:25,284 - gif_integration - INFO - Testing video URL: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:30:25,430 - gif_integration - INFO - ✅ Found working Baseball Savant video: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:30:25,432 - gif_integration - INFO - ✅ Found Baseball Savant play video, creating GIF...
+2025-06-23 18:30:25,432 - gif_integration - INFO - Downloading video from: https://fastball-clips.mlb.com/745807/home/40cceee7-25d6-48db-ad88-0e03a1d7c81a.m3u8
+2025-06-23 18:30:25,432 - gif_integration - INFO - Processing HLS stream directly with ffmpeg...
+2025-06-23 18:30:25,592 - gif_integration - INFO - HLS stream test: 200
+2025-06-23 18:30:25,592 - gif_integration - INFO - Using 10 second limit for fast processing
+2025-06-23 18:30:26,019 - __main__ - INFO - ⏹️ Stopped Mets scoring plays monitoring
+2025-06-23 18:30:26,019 - __main__ - INFO - ⏹️ Mets scoring plays tracker stopped

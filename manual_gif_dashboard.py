@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 # Import our local components
 from gif_integration import BaseballSavantGIFIntegration
 from telegram_bot import telegram_client
+from mets_hr_tracker import start_mets_hr_tracker, get_mets_hr_tracker
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-key-change-in-production')
@@ -124,6 +125,9 @@ class ManualGIFDashboard:
         
         # Start monitoring thread
         self.start_monitoring()
+        
+        # Start Mets HR background tracker
+        self.start_mets_hr_tracking()
     
     def start_monitoring(self):
         """Start the background monitoring thread"""
@@ -671,6 +675,11 @@ class ManualGIFDashboard:
             logger.error(f"Error checking individual play video: {e}")
             return 'unknown'
 
+    def start_mets_hr_tracking(self):
+        """Start the Mets HR background tracker"""
+        start_mets_hr_tracker()
+        logger.info("✅ Started Mets HR background tracking")
+
 # Global dashboard instance
 dashboard = ManualGIFDashboard()
 
@@ -786,11 +795,11 @@ def api_status():
 
 @app.route('/api/ping')
 def api_ping():
-    """Health check endpoint for Render"""
+    """Keep-alive ping endpoint"""
     return jsonify({
-        'status': 'healthy',
+        'status': 'ok',
         'timestamp': datetime.now().isoformat(),
-        'monitoring': dashboard.monitoring
+        'message': 'MLB GIF Dashboard is alive'
     })
 
 @app.route('/start_monitoring')
@@ -1066,6 +1075,68 @@ def api_mets_game():
             'success': False,
             'error': str(e)
         }), 500
+
+@app.route('/api/mets_hr_status')
+def api_mets_hr_status():
+    """Get Mets HR tracker status"""
+    try:
+        tracker = get_mets_hr_tracker()
+        if tracker:
+            status = tracker.get_status()
+        else:
+            status = {
+                'monitoring': False,
+                'uptime': None,
+                'last_check': None,
+                'queue_size': 0,
+                'processed_plays': 0,
+                'recent_home_runs': [],
+                'stats': {}
+            }
+        
+        return jsonify({
+            'success': True,
+            'status': status
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting Mets HR status: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/mets_hr_recent')
+def api_mets_hr_recent():
+    """Get recent Mets home runs"""
+    try:
+        limit = int(request.args.get('limit', 20))
+        tracker = get_mets_hr_tracker()
+        
+        if tracker:
+            recent_hrs = tracker.get_recent_home_runs(limit)
+        else:
+            recent_hrs = []
+        
+        return jsonify({
+            'success': True,
+            'home_runs': recent_hrs,
+            'count': len(recent_hrs)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting recent Mets HRs: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'home_runs': [],
+            'count': 0
+        }), 500
+
+@app.route('/mets_hrs')
+def mets_hrs_dashboard():
+    """Dedicated Mets HRs dashboard page"""
+    return render_template('mets_hrs.html')
 
 if __name__ == '__main__':
     # Handle graceful shutdown

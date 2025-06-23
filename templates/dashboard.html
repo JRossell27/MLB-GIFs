@@ -161,6 +161,7 @@
             text-decoration: none;
             display: inline-block;
             font-size: 0.9em;
+            white-space: nowrap;
         }
 
         .btn-small {
@@ -191,7 +192,7 @@
         .games-container {
             display: grid;
             gap: 25px;
-            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(650px, 1fr));
         }
 
         .game-card {
@@ -248,8 +249,8 @@
 
         .game-header {
             text-align: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
             border-bottom: 2px solid rgba(255,255,255,0.1);
         }
 
@@ -257,18 +258,29 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
+            padding: 0 10px;
         }
 
         .team-info {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .team-info:first-child {
+            justify-content: flex-start;
+        }
+
+        .team-info:last-child {
+            justify-content: flex-end;
+            flex-direction: row-reverse;
         }
 
         .team-logo {
-            width: 40px;
-            height: 40px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
             background: rgba(255,255,255,0.1);
             display: flex;
@@ -276,11 +288,13 @@
             justify-content: center;
             font-weight: bold;
             font-size: 0.9em;
+            flex-shrink: 0;
         }
 
         .team-name {
             font-size: 1.2em;
             font-weight: bold;
+            margin-bottom: 4px;
         }
 
         .team-score {
@@ -292,26 +306,28 @@
         .vs-divider {
             font-size: 1.5em;
             opacity: 0.6;
+            margin: 0 20px;
+            flex-shrink: 0;
         }
 
         .game-details {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 15px;
+            margin-bottom: 25px;
             text-align: center;
         }
 
         .game-detail {
             background: rgba(255,255,255,0.05);
-            padding: 8px;
+            padding: 12px 8px;
             border-radius: 6px;
         }
 
         .game-detail-label {
             font-size: 0.8em;
             opacity: 0.7;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
 
         .game-detail-value {
@@ -320,12 +336,12 @@
         }
 
         .pitch-data-section {
-            margin-top: 20px;
+            margin-top: 25px;
         }
 
         .load-pitch-btn {
             width: 100%;
-            padding: 12px;
+            padding: 15px;
             font-size: 1.1em;
             background: linear-gradient(45deg, #1e88e5, #1565c0);
             color: white;
@@ -349,13 +365,13 @@
 
         .pitch-data-controls {
             display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
+            gap: 12px;
+            margin-bottom: 20px;
             flex-wrap: wrap;
         }
 
         .half-inning-section {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             background: rgba(255,255,255,0.05);
             border-radius: 10px;
             overflow: hidden;
@@ -364,7 +380,7 @@
 
         .half-inning-header {
             background: rgba(30, 136, 229, 0.2);
-            padding: 15px;
+            padding: 18px;
             cursor: pointer;
             transition: all 0.3s ease;
             display: flex;
@@ -398,11 +414,11 @@
         }
 
         .half-inning-content {
-            padding: 15px;
+            padding: 20px;
         }
 
         .at-bat-section {
-            margin-bottom: 12px;
+            margin-bottom: 15px;
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 8px;
             overflow: hidden;
@@ -410,7 +426,7 @@
 
         .at-bat-header {
             background: rgba(255,255,255,0.08);
-            padding: 12px;
+            padding: 15px;
             cursor: pointer;
             transition: all 0.3s ease;
             display: flex;
@@ -430,7 +446,7 @@
         .at-bat-result {
             background: rgba(40, 167, 69, 0.2);
             color: #28a745;
-            padding: 4px 8px;
+            padding: 6px 10px;
             border-radius: 4px;
             font-size: 0.8em;
             font-weight: bold;
@@ -452,15 +468,15 @@
         }
 
         .at-bat-content {
-            padding: 15px;
+            padding: 20px;
             background: rgba(0,0,0,0.2);
         }
 
         .individual-pitch {
             background: rgba(255,255,255,0.05);
             border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 10px;
+            padding: 18px;
+            margin-bottom: 15px;
             border-left: 3px solid #00d4ff;
             transition: all 0.3s ease;
         }
@@ -475,20 +491,22 @@
         }
 
         .pitch-info {
-            margin-bottom: 12px;
+            margin-bottom: 15px;
         }
 
         .pitch-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .pitch-type-badge {
             background: linear-gradient(45deg, #17a2b8, #20c997);
             color: white;
-            padding: 4px 8px;
+            padding: 6px 10px;
             border-radius: 4px;
             font-size: 0.8em;
             font-weight: bold;
@@ -496,7 +514,7 @@
 
         .velocity-badge {
             background: rgba(255,255,255,0.1);
-            padding: 4px 8px;
+            padding: 6px 10px;
             border-radius: 4px;
             font-size: 0.8em;
         }
@@ -509,8 +527,8 @@
         .pitch-details-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 10px;
-            margin-bottom: 12px;
+            gap: 12px;
+            margin-bottom: 15px;
         }
 
         .pitch-detail {
@@ -523,13 +541,14 @@
 
         .pitch-actions {
             text-align: center;
+            margin-top: 15px;
         }
 
         .create-pitch-gif-btn {
             background: linear-gradient(45deg, #ff6b35, #f7931e);
             color: white;
             border: none;
-            padding: 8px 15px;
+            padding: 10px 18px;
             border-radius: 6px;
             cursor: pointer;
             font-weight: 600;
@@ -567,21 +586,21 @@
 
         .no-pitches {
             text-align: center;
-            padding: 30px;
+            padding: 40px 20px;
             opacity: 0.7;
         }
 
         .no-games {
             text-align: center;
-            padding: 50px;
+            padding: 60px 20px;
             opacity: 0.7;
         }
 
         .pitch-summary {
             background: rgba(30, 136, 229, 0.1);
-            padding: 15px;
+            padding: 20px;
             border-radius: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             border-left: 4px solid #1e88e5;
         }
 
@@ -637,24 +656,47 @@
             
             .search-filter-grid {
                 grid-template-columns: 1fr;
-                gap: 10px;
+                gap: 12px;
             }
-            
+
             .games-container {
                 grid-template-columns: 1fr;
+                gap: 20px;
             }
             
             .team-matchup {
                 flex-direction: column;
                 gap: 15px;
+                padding: 0;
             }
-            
+
+            .team-info:last-child {
+                flex-direction: row;
+            }
+
+            .vs-divider {
+                margin: 0 10px;
+            }
+
             .pitch-details-grid {
                 grid-template-columns: 1fr;
+                gap: 8px;
             }
             
             .game-details {
                 grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+
+            .pitch-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .quick-actions {
+                justify-content: center;
+                flex-wrap: wrap;
             }
         }
     </style>

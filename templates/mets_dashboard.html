@@ -413,35 +413,79 @@
             }
 
             let html = '';
-            const sortedInnings = Object.keys(pitchData.half_innings).sort();
+            
+            // Count total pitches
+            let totalPitches = 0;
+            Object.values(pitchData.half_innings).forEach(halfInning => {
+                Object.values(halfInning.at_bats).forEach(atBat => {
+                    totalPitches += atBat.pitches.length;
+                });
+            });
+            
+            html += `
+                <div class="pitch-summary">
+                    <strong>Total Individual Pitches:</strong> ${totalPitches}
+                </div>
+            `;
+            
+            // Sort half-innings by inning number and half
+            const sortedHalfInnings = Object.entries(pitchData.half_innings).sort((a, b) => {
+                const [aHalf, aInning] = a[0].split('_');
+                const [bHalf, bInning] = b[0].split('_');
+                const inningDiff = parseInt(aInning) - parseInt(bInning);
+                if (inningDiff !== 0) return inningDiff;
+                return aHalf === 'top' ? -1 : 1; // top comes before bottom
+            });
 
-            for (const inningKey of sortedInnings) {
-                const inning = pitchData.half_innings[inningKey];
+            sortedHalfInnings.forEach(([halfInningKey, halfInning]) => {
+                const atBatCount = Object.keys(halfInning.at_bats).length;
+                const pitchCount = Object.values(halfInning.at_bats).reduce((sum, atBat) => sum + atBat.pitches.length, 0);
+                
                 html += `
                     <div class="pitch-section">
-                        <div class="pitch-header">
-                            <div class="pitch-title">📊 ${inning.display_name}</div>
+                        <div class="pitch-header" onclick="toggleHalfInning('${halfInningKey}')">
+                            <div class="pitch-title">📊 ${halfInning.display_name}</div>
+                            <div class="pitch-stats">${atBatCount} at-bats, ${pitchCount} pitches</div>
+                            <span class="toggle-icon" id="toggle-${halfInningKey}">▶</span>
                         </div>
-                        <div class="pitch-data-container">
+                        <div class="pitch-data-container" id="content-${halfInningKey}" style="display: none;">
                 `;
 
-                const atBats = Object.values(inning.at_bats);
-                for (const atBat of atBats) {
-                    for (const pitch of atBat.pitches) {
+                // Sort at-bats by batter name for consistency
+                const sortedAtBats = Object.entries(halfInning.at_bats).sort((a, b) => 
+                    a[1].batter_name.localeCompare(b[1].batter_name)
+                );
+
+                sortedAtBats.forEach(([atBatKey, atBat]) => {
+                    html += `
+                        <div class="at-bat-section">
+                            <div class="at-bat-header" onclick="toggleAtBat('${halfInningKey}', '${atBatKey}')">
+                                <span class="at-bat-title">${atBat.batter_name}</span>
+                                <span class="at-bat-result">${atBat.result}</span>
+                                <span class="at-bat-pitch-count">${atBat.pitch_count} pitches</span>
+                                <span class="toggle-icon" id="toggle-${halfInningKey}-${atBatKey}">▶</span>
+                            </div>
+                            <div class="at-bat-content" id="content-${halfInningKey}-${atBatKey}" style="display: none;">
+                    `;
+                    
+                    // Display each individual pitch
+                    atBat.pitches.forEach((pitch, pitchIndex) => {
                         html += `
                             <div class="pitch-item">
                                 <div class="pitch-info">
                                     <div class="pitch-details">
-                                        <strong>${pitch.batter_name}</strong>
-                                        <span class="pitch-type">${pitch.pitch_type}</span>
-                                        <span class="pitch-velocity">${pitch.velocity} mph</span>
+                                        <strong>Pitch ${pitch.pitch_number}:</strong> ${pitch.pitch_type}
+                                        <span class="pitch-type">${pitch.velocity} mph</span>
+                                        <span class="pitch-velocity">Count: ${pitch.count}</span>
                                         <span class="pitch-result">${pitch.result}</span>
+                                        <strong>Pitcher:</strong> ${pitch.pitcher_name}
                                     </div>
                                     <div class="pitch-actions">
                                         <button class="create-pitch-gif-btn" 
                                                 data-game-id="${pitchData.game_id}" 
                                                 data-play-id="${pitch.play_id}"
                                                 data-team-batting="${pitch.team_batting}"
+                                                data-pitch-info='${JSON.stringify(pitch)}'
                                                 ${!pitch.video_available ? 'disabled' : ''}>
                                             ${pitch.video_available ? '🎬 Create GIF' : '❌ No Video'}
                                         </button>
@@ -449,14 +493,19 @@
                                 </div>
                             </div>
                         `;
-                    }
-                }
+                    });
+                    
+                    html += `
+                            </div>
+                        </div>
+                    `;
+                });
 
                 html += `
                         </div>
                     </div>
                 `;
-            }
+            });
 
             return html;
         }

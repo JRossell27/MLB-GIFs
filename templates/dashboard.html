@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manual MLB GIF Dashboard</title>
+    <title>MLB Pitch Data Dashboard</title>
     <style>
         * {
             margin: 0;
@@ -13,7 +13,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
             color: white;
             min-height: 100vh;
             padding: 15px;
@@ -27,25 +27,25 @@
 
         .header {
             text-align: center;
-            padding: 20px;
-            background: rgba(0,0,0,0.3);
+            padding: 25px;
+            background: rgba(0,0,0,0.4);
             border-radius: 15px;
             backdrop-filter: blur(15px);
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             border: 1px solid rgba(255,255,255,0.1);
         }
 
         .header h1 {
-            font-size: 2.2em;
-            margin-bottom: 8px;
-            background: linear-gradient(45deg, #ff6b35, #f7931e);
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #00d4ff, #1e88e5);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
 
         .header p {
-            font-size: 1.1em;
+            font-size: 1.2em;
             opacity: 0.9;
         }
 
@@ -56,7 +56,7 @@
             background: rgba(0,0,0,0.4);
             padding: 15px;
             border-radius: 12px;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             backdrop-filter: blur(10px);
             flex-wrap: wrap;
             gap: 10px;
@@ -82,25 +82,6 @@
             animation: none;
         }
 
-        .game-summary {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        .summary-item {
-            background: rgba(255,255,255,0.1);
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 0.85em;
-            font-weight: bold;
-        }
-
-        .summary-item.live { background: rgba(40, 167, 69, 0.3); }
-        .summary-item.warmup { background: rgba(255, 193, 7, 0.3); }
-        .summary-item.scheduled { background: rgba(108, 117, 125, 0.3); }
-        .summary-item.final { background: rgba(111, 66, 193, 0.3); }
-
         @keyframes pulse {
             0% { opacity: 1; }
             50% { opacity: 0.5; }
@@ -110,20 +91,81 @@
         .controls {
             display: flex;
             gap: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-filter-section {
+            background: rgba(0,0,0,0.4);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            backdrop-filter: blur(10px);
+        }
+
+        .search-filter-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .search-input {
+            padding: 12px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #00d4ff;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+        }
+
+        .search-input::placeholder {
+            color: rgba(255,255,255,0.6);
+        }
+
+        .filter-select {
+            padding: 12px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+
+        .filter-select option {
+            background: #1a1a2e;
+            color: white;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 8px;
         }
 
         .btn {
-            padding: 8px 16px;
+            padding: 10px 18px;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             text-decoration: none;
             display: inline-block;
             font-size: 0.9em;
+        }
+
+        .btn-small {
+            padding: 8px 12px;
+            font-size: 0.8em;
         }
 
         .btn-primary {
@@ -136,629 +178,413 @@
             color: white;
         }
 
-        .btn-danger {
-            background: linear-gradient(45deg, #dc3545, #c82333);
+        .btn-info {
+            background: linear-gradient(45deg, #17a2b8, #117a8b);
             color: white;
         }
 
         .btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
 
-        .games-grid {
+        .games-container {
             display: grid;
-            gap: 20px;
-            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-            margin-bottom: 20px;
+            gap: 25px;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
         }
 
         .game-card {
-            background: rgba(255,255,255,0.05);
+            background: rgba(255,255,255,0.08);
             border-radius: 15px;
-            padding: 20px;
-            border-left: 4px solid transparent;
+            padding: 25px;
             backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
             transition: all 0.3s ease;
-            cursor: pointer;
-            min-height: 150px;
-        }
-
-        .game-card.collapsed .game-content {
-            display: none;
-        }
-
-        .game-card.live {
-            border-left-color: #28a745;
-            box-shadow: 0 0 15px rgba(40, 167, 69, 0.2);
-        }
-
-        .game-card.warmup {
-            border-left-color: #ffc107;
-            box-shadow: 0 0 15px rgba(255, 193, 7, 0.2);
-        }
-
-        .game-card.scheduled {
-            border-left-color: #6c757d;
-        }
-
-        .game-card.final {
-            border-left-color: #6f42c1;
         }
 
         .game-card:hover {
-            transform: translateY(-3px);
+            transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(0,0,0,0.2);
         }
 
+        .game-card.live {
+            border-left: 4px solid #28a745;
+            box-shadow: 0 0 20px rgba(40, 167, 69, 0.2);
+        }
+
+        .game-card.scheduled {
+            border-left: 4px solid #ffc107;
+        }
+
+        .game-card.final {
+            border-left: 4px solid #6c757d;
+        }
+
+        .game-status-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .game-status-badge.live {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            animation: pulse 2s infinite;
+        }
+
+        .game-status-badge.scheduled {
+            background: linear-gradient(45deg, #ffc107, #fd7e14);
+        }
+
+        .game-status-badge.final {
+            background: linear-gradient(45deg, #6c757d, #495057);
+        }
+
         .game-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .team-matchup {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .game-teams {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-            gap: 15px;
         }
 
         .team-info {
             display: flex;
-            flex-direction: column;
-            gap: 4px;
-            flex: 1;
-        }
-
-        .team-name {
-            font-size: 1.3em;
-            font-weight: bold;
-            color: #00ff88;
-        }
-
-        .game-status {
-            font-size: 0.9em;
-            opacity: 0.7;
-        }
-
-        .game-score-section {
-            display: flex;
-            flex-direction: column;
             align-items: center;
-            gap: 4px;
-            flex: 1;
-        }
-
-        .score-display {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .score {
-            font-size: 1.4em;
-            font-weight: bold;
-            color: #ff6b35;
-        }
-
-        .inning {
-            font-size: 0.9em;
-            opacity: 0.7;
-        }
-
-        .venue-info {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2px;
-        }
-
-        .venue {
-            font-size: 0.8em;
-            opacity: 0.8;
-            text-align: center;
-        }
-
-        .start-time {
-            font-size: 0.7em;
-            opacity: 0.6;
-        }
-
-        .plays-summary {
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
-            min-width: 80px;
-        }
-
-        .savant-indicator {
-            font-size: 0.75em;
-            padding: 2px 6px;
-            border-radius: 4px;
-            background: rgba(40, 167, 69, 0.2);
-            color: #28a745;
-            font-weight: bold;
-            border: 1px solid rgba(40, 167, 69, 0.3);
-        }
-
-        .savant-indicator.unavailable {
-            background: rgba(220, 53, 69, 0.2);
-            color: #dc3545;
-            border: 1px solid rgba(220, 53, 69, 0.3);
-        }
-
-        .savant-info {
-            background: rgba(40, 167, 69, 0.1);
-            border-left: 3px solid #28a745;
-            padding: 12px;
-            margin-bottom: 15px;
-            border-radius: 8px;
-        }
-
-        .savant-info.unavailable {
-            background: rgba(220, 53, 69, 0.1);
-            border-left-color: #dc3545;
-        }
-
-        .savant-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
             gap: 10px;
         }
 
-        .savant-title {
+        .team-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-weight: bold;
             font-size: 0.9em;
         }
 
-        .savant-stats {
-            font-size: 0.8em;
-            opacity: 0.8;
-        }
-
-        .savant-note {
-            font-size: 0.8em;
-            opacity: 0.7;
-            font-style: italic;
-        }
-
-        .play-video-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 0.75em;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-
-        .play-video-indicator.savant-available {
-            background: rgba(40, 167, 69, 0.2);
-            color: #28a745;
-            border: 1px solid rgba(40, 167, 69, 0.3);
-        }
-
-        .play-video-indicator.highlight-only {
-            background: rgba(255, 193, 7, 0.2);
-            color: #ffc107;
-            border: 1px solid rgba(255, 193, 7, 0.3);
-        }
-
-        .play-video-indicator.no-video {
-            background: rgba(108, 117, 125, 0.2);
-            color: #6c757d;
-            border: 1px solid rgba(108, 117, 125, 0.3);
-        }
-
-        .plays-count {
-            font-size: 0.8em;
-            opacity: 0.7;
-        }
-
-        .plays-number {
+        .team-name {
             font-size: 1.2em;
             font-weight: bold;
-            color: #ff6b35;
+        }
+
+        .team-score {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #00d4ff;
+        }
+
+        .vs-divider {
+            font-size: 1.5em;
+            opacity: 0.6;
+        }
+
+        .game-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .game-detail {
+            background: rgba(255,255,255,0.05);
+            padding: 8px;
+            border-radius: 6px;
+        }
+
+        .game-detail-label {
+            font-size: 0.8em;
+            opacity: 0.7;
+            margin-bottom: 4px;
+        }
+
+        .game-detail-value {
+            font-weight: bold;
+            color: #00d4ff;
+        }
+
+        .pitch-data-section {
+            margin-top: 20px;
+        }
+
+        .load-pitch-btn {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.1em;
+            background: linear-gradient(45deg, #1e88e5, #1565c0);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .load-pitch-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(30, 136, 229, 0.4);
+        }
+
+        .load-pitch-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .pitch-data-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .half-inning-section {
+            margin-bottom: 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            overflow: hidden;
+            border-left: 3px solid #1e88e5;
+        }
+
+        .half-inning-header {
+            background: rgba(30, 136, 229, 0.2);
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .half-inning-header:hover {
+            background: rgba(30, 136, 229, 0.3);
+        }
+
+        .half-inning-title {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #00d4ff;
+        }
+
+        .half-inning-stats {
+            font-size: 0.9em;
+            opacity: 0.8;
         }
 
         .toggle-icon {
             font-size: 1.2em;
+            color: #00d4ff;
             transition: transform 0.3s ease;
         }
 
-        .game-content {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid rgba(255,255,255,0.1);
+        .toggle-icon.expanded {
+            transform: rotate(90deg);
         }
 
-        /* Plays Section Styling */
-        .plays-section {
-            margin-bottom: 20px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 12px;
+        .half-inning-content {
             padding: 15px;
         }
 
-        .plays-header {
+        .at-bat-section {
+            margin-bottom: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .at-bat-header {
+            background: rgba(255,255,255,0.08);
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
 
-        .plays-title {
-            font-size: 1.1em;
+        .at-bat-header:hover {
+            background: rgba(255,255,255,0.12);
+        }
+
+        .at-bat-title {
             font-weight: bold;
-            color: #ff6b35;
+            color: #ffffff;
         }
 
-        .plays-list {
-            max-height: 400px;
-            overflow-y: auto;
-            padding-right: 5px;
+        .at-bat-result {
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
         }
 
-        .play-item {
-            background: rgba(255,255,255,0.08);
+        .at-bat-result.strikeout {
+            background: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+        }
+
+        .at-bat-result.home-run {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+
+        .at-bat-pitch-count {
+            font-size: 0.9em;
+            opacity: 0.7;
+        }
+
+        .at-bat-content {
+            padding: 15px;
+            background: rgba(0,0,0,0.2);
+        }
+
+        .individual-pitch {
+            background: rgba(255,255,255,0.05);
             border-radius: 8px;
             padding: 15px;
-            margin-bottom: 12px;
-            border-left: 3px solid #007bff;
+            margin-bottom: 10px;
+            border-left: 3px solid #00d4ff;
             transition: all 0.3s ease;
         }
 
-        .play-item:hover {
-            background: rgba(255,255,255,0.12);
-            transform: translateX(2px);
+        .individual-pitch:hover {
+            background: rgba(255,255,255,0.08);
         }
 
-        .play-item.high-impact {
-            border-left-color: #ff6b35;
-            background: rgba(255, 107, 53, 0.1);
-        }
-
-        .play-item.gif-created {
-            border-left-color: #28a745;
-            background: rgba(40, 167, 69, 0.1);
-        }
-
-        .play-item.gif-processing {
+        .individual-pitch.notable {
             border-left-color: #ffc107;
-            background: rgba(255, 193, 7, 0.1);
+            box-shadow: 0 0 10px rgba(255, 193, 7, 0.2);
         }
 
-        .play-header {
+        .pitch-info {
+            margin-bottom: 12px;
+        }
+
+        .pitch-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 8px;
-            flex-wrap: wrap;
-            gap: 10px;
         }
 
-        .play-event-section {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .play-event {
-            font-weight: bold;
-            font-size: 1em;
-            color: #ff6b35;
-        }
-
-        .play-impact {
-            font-size: 0.85em;
-            color: #28a745;
+        .pitch-type-badge {
+            background: linear-gradient(45deg, #17a2b8, #20c997);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
             font-weight: bold;
         }
 
-        .play-description {
-            font-size: 0.9em;
-            opacity: 0.8;
-            margin-bottom: 10px;
-            line-height: 1.4;
+        .velocity-badge {
+            background: rgba(255,255,255,0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
         }
 
-        .play-details {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            gap: 15px;
-            flex-wrap: wrap;
+        .velocity-badge.fast {
+            background: linear-gradient(45deg, #dc3545, #fd7e14);
+            color: white;
         }
 
-        .details-grid {
+        .pitch-details-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-            gap: 8px;
-            flex-grow: 1;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+            margin-bottom: 12px;
         }
 
-        .detail-item {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .detail-label {
-            font-size: 0.7em;
-            opacity: 0.6;
-            text-transform: uppercase;
-            font-weight: bold;
-        }
-
-        .detail-value {
-            font-size: 0.85em;
-            font-weight: bold;
-            color: #00ff88;
-        }
-
-        .play-actions {
-            flex-shrink: 0;
-        }
-
-        .create-gif-btn {
-            background: linear-gradient(45deg, #007bff, #0056b3);
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 8px;
-            cursor: pointer;
+        .pitch-detail {
             font-size: 0.9em;
-            transition: all 0.3s ease;
-            font-weight: bold;
-            white-space: nowrap;
         }
 
-        .create-gif-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0, 123, 255, 0.4);
+        .pitch-detail strong {
+            color: #00d4ff;
         }
 
-        .create-gif-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .highlights-section {
-            margin-bottom: 20px;
-            background: rgba(255, 193, 7, 0.1);
-            border-radius: 12px;
-            padding: 15px;
-            border: 1px solid rgba(255, 193, 7, 0.2);
-        }
-
-        .highlights-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .highlights-title {
-            font-size: 1.1em;
-            font-weight: bold;
-            color: #ffc107;
-        }
-
-        .highlights-list {
-            max-height: 300px;
-            overflow-y: auto;
-            padding-right: 5px;
-        }
-
-        .highlight-item {
-            background: rgba(255,255,255,0.08);
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 10px;
-            border-left: 3px solid #ffc107;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 15px;
-        }
-
-        .highlight-content {
-            flex-grow: 1;
-        }
-
-        .highlight-title {
-            font-size: 1em;
-            font-weight: bold;
-            color: #ffc107;
-            margin-bottom: 6px;
-            line-height: 1.3;
-        }
-
-        .highlight-details {
-            font-size: 0.85em;
-            opacity: 0.7;
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 6px;
-        }
-
-        .highlight-description {
-            font-size: 0.85em;
-            opacity: 0.8;
-            font-style: italic;
-            margin-top: 6px;
-            line-height: 1.4;
-        }
-
-        .highlight-actions {
-            flex-shrink: 0;
-        }
-
-        .create-highlight-gif-btn {
-            background: linear-gradient(45deg, #ffc107, #ff6b35);
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.9em;
-            transition: all 0.3s ease;
-            font-weight: bold;
-            white-space: nowrap;
-        }
-
-        .create-highlight-gif-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(255, 193, 7, 0.4);
-        }
-
-        .create-highlight-gif-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .load-highlights-btn {
-            background: linear-gradient(45deg, #ffc107, #ff6b35);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.9em;
-            transition: all 0.3s ease;
-            font-weight: bold;
-        }
-
-        .load-highlights-btn:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
-        }
-
-        .load-highlights-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .no-highlights {
+        .pitch-actions {
             text-align: center;
-            padding: 20px;
+        }
+
+        .create-pitch-gif-btn {
+            background: linear-gradient(45deg, #ff6b35, #f7931e);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+        }
+
+        .create-pitch-gif-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(255, 107, 53, 0.4);
+        }
+
+        .create-pitch-gif-btn:disabled {
             opacity: 0.6;
-            font-style: italic;
-            color: #ffc107;
+            cursor: not-allowed;
+        }
+
+        .create-pitch-gif-btn.success {
+            background: linear-gradient(45deg, #28a745, #20c997);
+        }
+
+        .skeleton-loader {
+            background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+            border-radius: 4px;
+            height: 20px;
+            margin-bottom: 8px;
+        }
+
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .no-pitches {
+            text-align: center;
+            padding: 30px;
+            opacity: 0.7;
         }
 
         .no-games {
             text-align: center;
-            padding: 40px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 15px;
-            backdrop-filter: blur(10px);
-        }
-
-        .no-games h3 {
-            font-size: 1.3em;
-            margin-bottom: 12px;
-            color: #ff6b35;
-        }
-
-        .no-games p {
+            padding: 50px;
             opacity: 0.7;
-            font-size: 1em;
         }
 
-        .no-plays {
-            text-align: center;
-            padding: 20px;
-            opacity: 0.7;
-            font-style: italic;
+        .pitch-summary {
+            background: rgba(30, 136, 229, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #1e88e5;
         }
 
-        .loading {
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            border: 2px solid #ffffff40;
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Scrollbar styling */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: rgba(255,255,255,0.1);
-            border-radius: 3px;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: rgba(255,107,53,0.6);
-            border-radius: 3px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(255,107,53,0.8);
-        }
-
-        /* Responsive design */
-        @media (max-width: 768px) {
-            .header h1 {
-                font-size: 1.8em;
-            }
-
-            .status-bar {
-                flex-direction: column;
-                gap: 10px;
-            }
-
-            .controls {
-                justify-content: center;
-            }
-
-            .games-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .game-teams {
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .highlight-item {
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .highlight-actions {
-                align-self: stretch;
-            }
-            
-            .create-highlight-gif-btn {
-                width: 100%;
-            }
-        }
-
-        /* Toast notifications */
         .toast {
             position: fixed;
             top: 20px;
@@ -766,12 +592,12 @@
             background: rgba(0,0,0,0.9);
             color: white;
             padding: 15px 20px;
-            border-radius: 10px;
-            border-left: 4px solid #28a745;
-            backdrop-filter: blur(10px);
+            border-radius: 8px;
             z-index: 1000;
-            transform: translateX(100%);
+            transform: translateX(400px);
             transition: transform 0.3s ease;
+            border-left: 4px solid #28a745;
+            max-width: 350px;
         }
 
         .toast.show {
@@ -782,1075 +608,271 @@
             border-left-color: #dc3545;
         }
 
-        .toast.warning {
-            border-left-color: #ffc107;
+        .loading {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
         }
 
-        .control-bar {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            align-items: center;
-            margin-bottom: 20px;
-            padding: 15px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 15px;
-            backdrop-filter: blur(10px);
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
-        .control-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        .hidden {
+            display: none !important;
         }
 
-        .control-group label {
-            font-size: 0.9em;
-            font-weight: bold;
-            color: #ff6b35;
-        }
-
-        .filter-dropdown {
-            padding: 8px 12px;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 8px;
-            color: white;
-            font-size: 0.9em;
-            backdrop-filter: blur(5px);
-        }
-
-        .filter-dropdown option {
-            background: #1a1a1a;
-            color: white;
-        }
-
-        .search-input {
-            padding: 8px 12px;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 8px;
-            color: white;
-            font-size: 0.9em;
-            backdrop-filter: blur(5px);
-            min-width: 200px;
-        }
-
-        .search-input::placeholder {
-            color: rgba(255,255,255,0.6);
-        }
-
-        .control-button {
-            padding: 8px 15px;
-            background: linear-gradient(45deg, #6f42c1, #e83e8c);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.9em;
-            transition: all 0.3s ease;
-        }
-
-        .control-button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 3px 8px rgba(111, 66, 193, 0.4);
-        }
-
-        .play-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .play-event-section {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .play-event {
-            font-weight: bold;
-            font-size: 1em;
-            color: #ff6b35;
-        }
-
-        /* NEW: Pitch-by-Pitch Section Styling */
-        .pitch-section {
-            margin-bottom: 20px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 12px;
-            padding: 15px;
-        }
-
-        .pitch-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .pitch-title {
-            font-size: 1.1em;
-            font-weight: bold;
-            color: #ff6b35;
-        }
-
-        .pitch-data-container {
-            max-height: 400px;
-            overflow-y: auto;
-            padding-right: 5px;
-        }
-
-        .pitch-item {
-            background: rgba(255,255,255,0.08);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 12px;
-            border-left: 3px solid #007bff;
-            transition: all 0.3s ease;
-        }
-
-        .pitch-item:hover {
-            background: rgba(255,255,255,0.12);
-            transform: translateX(2px);
-        }
-
-        .pitch-item.high-impact {
-            border-left-color: #ff6b35;
-            background: rgba(255, 107, 53, 0.1);
-        }
-
-        .pitch-item.gif-created {
-            border-left-color: #28a745;
-            background: rgba(40, 167, 69, 0.1);
-        }
-
-        .pitch-item.gif-processing {
-            border-left-color: #ffc107;
-            background: rgba(255, 193, 7, 0.1);
-        }
-
-        .pitch-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .pitch-event-section {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .pitch-event {
-            font-weight: bold;
-            font-size: 1em;
-            color: #ff6b35;
-        }
-
-        .pitch-impact {
-            font-size: 0.85em;
-            color: #28a745;
-            font-weight: bold;
-        }
-
-        .pitch-description {
-            font-size: 0.9em;
-            opacity: 0.8;
-            margin-bottom: 10px;
-            line-height: 1.4;
-        }
-
-        .pitch-details {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        .pitch-actions {
-            flex-shrink: 0;
-        }
-
-        .load-pitches-btn {
-            background: linear-gradient(45deg, #007bff, #0056b3);
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.9em;
-            transition: all 0.3s ease;
-            font-weight: bold;
-        }
-
-        .load-pitches-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0, 123, 255, 0.4);
-        }
-
-        .load-pitches-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        /* Hierarchical Pitch Display Styles */
-        .pitch-summary {
-            background: rgba(255,255,255,0.1);
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            font-size: 0.9em;
-        }
-
-        .half-inning-section {
-            margin-bottom: 12px;
-            background: rgba(255,255,255,0.08);
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        .half-inning-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 15px;
-            background: rgba(255,255,255,0.1);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .half-inning-header:hover {
-            background: rgba(255,255,255,0.15);
-        }
-
-        .half-inning-title {
-            font-weight: bold;
-            color: #ff6b35;
-            font-size: 1.1em;
-        }
-
-        .half-inning-stats {
-            font-size: 0.85em;
-            opacity: 0.8;
-        }
-
-        .half-inning-content {
-            padding: 10px 15px;
-        }
-
-        .at-bat-section {
-            margin-bottom: 10px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .at-bat-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 12px;
-            background: rgba(255,255,255,0.08);
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .at-bat-header:hover {
-            background: rgba(255,255,255,0.12);
-        }
-
-        .at-bat-title {
-            font-weight: bold;
-            color: #007bff;
-        }
-
-        .at-bat-result {
-            font-size: 0.85em;
-            color: #28a745;
-            font-weight: bold;
-        }
-
-        .at-bat-pitch-count {
-            font-size: 0.8em;
-            opacity: 0.7;
-        }
-
-        .at-bat-content {
-            padding: 8px 12px;
-        }
-
-        .individual-pitch {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 10px;
-            margin-bottom: 6px;
-            background: rgba(255,255,255,0.03);
-            border-radius: 6px;
-            border-left: 2px solid #007bff;
-            transition: all 0.3s ease;
-        }
-
-        .individual-pitch:hover {
-            background: rgba(255,255,255,0.08);
-            transform: translateX(2px);
-        }
-
-        .pitch-info {
-            flex-grow: 1;
-        }
-
-        .pitch-details-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 8px;
-            font-size: 0.8em;
-        }
-
-        .pitch-detail {
-            opacity: 0.9;
-        }
-
-        .pitch-detail strong {
-            color: #ff6b35;
-        }
-
-        .create-pitch-gif-btn {
-            background: linear-gradient(45deg, #28a745, #1e7e34);
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.8em;
-            transition: all 0.3s ease;
-            font-weight: bold;
-            white-space: nowrap;
-        }
-
-        .create-pitch-gif-btn:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(40, 167, 69, 0.4);
-        }
-
-        .create-pitch-gif-btn:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
-        .toggle-icon {
-            font-size: 0.8em;
-            transition: transform 0.3s ease;
-        }
-
-        .no-pitches {
-            text-align: center;
-            padding: 20px;
-            opacity: 0.7;
-            font-style: italic;
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .search-filter-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .games-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .team-matchup {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .pitch-details-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .game-details {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎬 MLB Manual GIF Dashboard</h1>
-            <div class="status" id="status">
-                <div class="status-bar">
-                    <div class="status-item">
-                        <div class="status-indicator" id="status-indicator"></div>
-                        <span id="status-text">Loading...</span>
-                    </div>
-                    <div class="status-item">
-                        <span id="last-update">Last Update: Never</span>
-                    </div>
-                    <div class="game-summary" id="game-summary">
-                        <!-- Game summary will be populated by JavaScript -->
-                    </div>
+            <h1>⚾ MLB Pitch Data Dashboard</h1>
+            <p>Real-time individual pitch tracking and GIF creation</p>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-indicator" id="monitoring-indicator"></div>
+                <span>Monitoring: <span id="monitoring-status">Checking...</span></span>
+            </div>
+            <div class="status-item">
+                <span>Last Update: <span id="last-update">Never</span></span>
+            </div>
+            <div class="status-item">
+                <span>Total Games: <span id="total-games">0</span></span>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-success" onclick="refreshDashboard()">🔄 Refresh Data</button>
+            <a href="/mets" class="btn btn-primary">🗽 Mets Dashboard</a>
+        </div>
+
+        <div class="search-filter-section">
+            <div class="search-filter-grid">
+                <input type="text" class="search-input" id="searchInput" placeholder="🔍 Search teams, players, or pitch types..." oninput="filterGames()">
+                
+                <select class="filter-select" id="gameFilter" onchange="filterGames()">
+                    <option value="all">All Games</option>
+                    <option value="live">Live Games</option>
+                    <option value="scheduled">Scheduled</option>
+                    <option value="final">Final</option>
+                </select>
+                
+                <select class="filter-select" id="pitchFilter" onchange="filterPitches()">
+                    <option value="all">All Pitches</option>
+                    <option value="notable">Notable Only</option>
+                    <option value="strikeouts">Strikeouts</option>
+                    <option value="fast">100+ mph</option>
+                </select>
+                
+                <div class="quick-actions">
+                    <button class="btn btn-info btn-small" onclick="expandAllSections()">📂 Expand All</button>
+                    <button class="btn btn-info btn-small" onclick="collapseAllSections()">📁 Collapse All</button>
                 </div>
             </div>
         </div>
 
-        <div class="control-bar">
-            <div class="control-group">
-                <label for="playFilter">Filter:</label>
-                <select id="playFilter" class="filter-dropdown">
-                    <option value="all">All Plays</option>
-                    <option value="high-impact">High Impact Only</option>
-                    <option value="recent">Last 30 Minutes</option>
-                    <option value="hits">Hits & Home Runs</option>
-                </select>
-            </div>
-            
-            <div class="control-group">
-                <label for="searchInput">Search:</label>
-                <input type="text" id="searchInput" class="search-input" placeholder="Search by player, event, description...">
-            </div>
-            
-            <a href="/mets" class="btn btn-primary" style="text-decoration: none;">🟠🔵 Mets</a>
-            <button id="expandAllBtn" class="control-button">Expand All Games</button>
-            <button id="collapseAllBtn" class="control-button">Collapse All Games</button>
-        </div>
-
-        <div id="games-container">
+        <div class="games-container" id="games-container">
             <div class="no-games">
-                <h3>Loading Games...</h3>
-                <p>Please wait while we fetch today's MLB games and plays.</p>
+                <div class="loading"></div>
+                <p>Loading games...</p>
             </div>
         </div>
     </div>
 
     <script>
-        let currentFilter = 'all';
-        let currentSearch = '';
-        let allGamesExpanded = false;
-        let expandedGames = new Set();
+        let refreshInterval;
+        let allGamesData = [];
+        let currentFilters = {
+            search: '',
+            gameFilter: 'all',
+            pitchFilter: 'all'
+        };
 
-        // Initialize event listeners
         document.addEventListener('DOMContentLoaded', function() {
-            // Filter dropdown
-            document.getElementById('playFilter').addEventListener('change', function(e) {
-                currentFilter = e.target.value;
-                loadGames();
-            });
-
-            // Search input
-            document.getElementById('searchInput').addEventListener('input', function(e) {
-                currentSearch = e.target.value.toLowerCase();
-                loadGames();
-            });
-
-            // Expand/Collapse buttons
-            document.getElementById('expandAllBtn').addEventListener('click', function() {
-                allGamesExpanded = true;
-                loadGames();
-            });
-
-            document.getElementById('collapseAllBtn').addEventListener('click', function() {
-                allGamesExpanded = false;
-                loadGames();
-            });
-
             loadGames();
-            setInterval(loadGames, 30000); // Refresh every 30 seconds
+            
+            // Auto-refresh every 2 minutes
+            refreshInterval = setInterval(loadGames, 120000);
         });
-
-        function filterPlays(plays) {
-            return plays.filter(play => {
-                // Apply search filter
-                if (currentSearch) {
-                    const searchTerms = [
-                        play.batter || '',           // Use 'batter' not 'batter_name'
-                        play.pitcher || '',          // Use 'pitcher' not 'pitcher_name'
-                        play.event || '',            // Use 'event' not 'event_type'
-                        play.description || ''
-                    ].join(' ').toLowerCase();
-                    
-                    if (!searchTerms.includes(currentSearch)) {
-                        return false;
-                    }
-                }
-
-                // Apply dropdown filter
-                switch (currentFilter) {
-                    case 'high-impact':
-                        return (play.wpa && Math.abs(play.wpa) > 0.1) || 
-                               (play.impact_score && play.impact_score > 0.5);
-                    
-                    case 'recent':
-                        if (play.timestamp) {
-                            const playTime = new Date(play.timestamp);
-                            const now = new Date();
-                            const diffMinutes = (now - playTime) / (1000 * 60);
-                            return diffMinutes <= 30;
-                        }
-                        return true;
-                    
-                    case 'hits':
-                        const event = (play.event || '').toLowerCase();
-                        return event.includes('single') || event.includes('double') || 
-                               event.includes('triple') || event.includes('home_run') ||
-                               event.includes('home run');
-                    
-                    default:
-                        return true;
-                }
-            });
-        }
-
-        function groupPlaysByInning(plays) {
-            const innings = {};
-            plays.forEach(play => {
-                const inning = play.inning || 'Unknown';
-                const key = `${inning}${play.half_inning === 'bottom' ? 'B' : 'T'}`;
-                if (!innings[key]) {
-                    innings[key] = [];
-                }
-                innings[key].push(play);
-            });
-            return innings;
-        }
-
-        function toggleGame(gameId) {
-            if (expandedGames.has(gameId)) {
-                expandedGames.delete(gameId);
-            } else {
-                expandedGames.add(gameId);
-            }
-            loadGames(); // Refresh display
-        }
-
-        function formatGameTime(gameTime) {
-            try {
-                const date = new Date(gameTime);
-                return date.toLocaleTimeString('en-US', { 
-                    hour: 'numeric', 
-                    minute: '2-digit',
-                    timeZoneName: 'short'
-                });
-            } catch (e) {
-                return 'TBD';
-            }
-        }
-
-        function toggleExpandAll() {
-            allGamesExpanded = !allGamesExpanded;
-            const button = document.querySelector('.expand-all-btn');
-            button.textContent = allGamesExpanded ? 'Collapse All Games' : 'Expand All Games';
-            loadGames();
-        }
 
         async function loadGames() {
             try {
                 const response = await fetch('/api/games');
-                const gamesData = await response.json();
+                const data = await response.json();
 
-                // Update status display
-                const statusIndicator = document.getElementById('status-indicator');
-                const statusText = document.getElementById('status-text');
-                const lastUpdate = document.getElementById('last-update');
-                const gameSummary = document.getElementById('game-summary');
+                // Store all games data for filtering
+                allGamesData = data.games || [];
 
-                if (statusIndicator && statusText) {
-                    statusIndicator.className = 'status-indicator';
-                    statusText.textContent = gamesData.monitoring ? 'System Active' : 'System Inactive';
-                }
+                // Update status bar
+                document.getElementById('monitoring-status').textContent = data.monitoring ? 'Active' : 'Inactive';
+                document.getElementById('monitoring-indicator').className = `status-indicator ${data.monitoring ? '' : 'inactive'}`;
+                document.getElementById('last-update').textContent = data.last_update ? new Date(data.last_update).toLocaleTimeString() : 'Never';
+                document.getElementById('total-games').textContent = data.summary.total;
 
-                if (lastUpdate && gamesData.last_update) {
-                    const updateTime = new Date(gamesData.last_update);
-                    lastUpdate.textContent = `Last Update: ${updateTime.toLocaleTimeString()}`;
-                }
+                // Apply current filters
+                filterGames();
 
-                if (gameSummary && gamesData.summary) {
-                    const summary = gamesData.summary;
-                    gameSummary.innerHTML = `
-                        <div class="summary-item live">${summary.live} Live</div>
-                        <div class="summary-item warmup">${summary.warmup} Warmup</div>
-                        <div class="summary-item scheduled">${summary.scheduled} Scheduled</div>
-                        <div class="summary-item final">${summary.final} Final</div>
-                    `;
-                }
-
-                if (gamesData.games.length === 0) {
-                    document.getElementById('games-container').innerHTML = `
-                        <div class="no-games">
-                            <h3>📅 No Games Today</h3>
-                            <p>No MLB games found for today or games haven't started yet.</p>
-                        </div>
-                    `;
-                    return;
-                }
-
-                // Process games without breaking the data structure
-                const processedGames = gamesData.games.map(game => {
-                    // Apply filters to plays
-                    const filteredPlays = filterPlays(game.plays);
-                    
-                    // Return game with filtered plays
-                    return {
-                        ...game,
-                        plays: filteredPlays
-                    };
-                });
-
-                updateGamesDisplay(processedGames);
             } catch (error) {
                 console.error('Error loading games:', error);
-                showToast('Failed to load games', 'error');
-                
-                // Update status to show error
-                const statusIndicator = document.getElementById('status-indicator');
-                const statusText = document.getElementById('status-text');
-                if (statusIndicator && statusText) {
-                    statusIndicator.className = 'status-indicator inactive';
-                    statusText.textContent = 'Connection Error';
-                }
+                showToast('Error loading games', 'error');
             }
         }
 
-        function updateGamesDisplay(games) {
-            const container = document.getElementById('games-container');
+        function filterGames() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const gameFilter = document.getElementById('gameFilter').value;
             
-            if (games.length === 0) {
+            currentFilters.search = searchTerm;
+            currentFilters.gameFilter = gameFilter;
+
+            let filteredGames = allGamesData.filter(game => {
+                // Search filter
+                if (searchTerm) {
+                    const searchableText = `${game.home_team} ${game.away_team} ${game.game_state}`.toLowerCase();
+                    if (!searchableText.includes(searchTerm)) return false;
+                }
+
+                // Game status filter
+                if (gameFilter !== 'all' && game.category !== gameFilter) return false;
+
+                return true;
+            });
+
+            renderGames(filteredGames);
+        }
+
+        function renderGames(games) {
+            const container = document.getElementById('games-container');
+
+            if (!games || games.length === 0) {
                 container.innerHTML = `
                     <div class="no-games">
-                        <h3>📅 No Games Found</h3>
+                        <h3>⚾ No Games Found</h3>
                         <p>No games match your current filters.</p>
                     </div>
                 `;
                 return;
             }
 
-            // Create the games grid container
-            let html = '<div class="games-grid">';
-            
-            games.forEach(game => {
-                const isExpanded = allGamesExpanded || expandedGames.has(game.game_id);
-                const playCount = game.plays.length;
-                
-                // Determine game status class for proper styling
-                let gameStatusClass = 'scheduled';  // default
-                const gameState = (game.game_state || '').toLowerCase();
-                if (gameState.includes('live') || gameState.includes('progress')) {
-                    gameStatusClass = 'live';
-                } else if (gameState.includes('warmup') || gameState.includes('pre-game')) {
-                    gameStatusClass = 'warmup';
-                } else if (gameState.includes('final') || gameState.includes('completed')) {
-                    gameStatusClass = 'final';
-                }
-                
-                html += `
-                    <div class="game-card ${gameStatusClass}">
-                        <div class="game-header" onclick="toggleGame(${game.game_id})">
-                            <div class="game-teams">
-                                <div class="team-info">
-                                    <div class="team-name">${game.away_team} @ ${game.home_team}</div>
-                                    <div class="game-status">${game.game_state || 'Unknown'}</div>
+            // Sort games: live first, then warmup, then scheduled, then final
+            const sortedGames = games.sort((a, b) => {
+                if (a.category === 'live' && b.category !== 'live') return -1;
+                if (a.category !== 'live' && b.category === 'live') return 1;
+                if (a.category === 'warmup' && b.category !== 'warmup' && b.category !== 'live') return -1;
+                if (a.category !== 'warmup' && b.category === 'warmup' && a.category !== 'live') return 1;
+                return 0;
+            });
+
+            container.innerHTML = sortedGames.map(game => `
+                <div class="game-card ${game.category}" data-game-id="${game.game_id}">
+                    <div class="game-status-badge ${game.category}">${game.category}</div>
+                    
+                    <div class="game-header">
+                        <div class="team-matchup">
+                            <div class="team-info">
+                                <div class="team-logo">${game.away_team}</div>
+                                <div>
+                                    <div class="team-name">${game.away_team}</div>
+                                    <div class="team-score">${game.away_score}</div>
                                 </div>
-                                <div class="game-score-section">
-                                    <div class="score-display">
-                                        <div class="score">${game.away_score || 0} - ${game.home_score || 0}</div>
-                                        <div class="inning">Inning ${game.inning || 'N/A'}</div>
-                                    </div>
-                                    <div class="venue-info">
-                                        <div class="venue">${game.venue || 'Unknown Venue'}</div>
-                                        <div class="start-time">${game.game_time ? formatGameTime(game.game_time) : 'TBD'}</div>
-                                    </div>
-                                </div>
-                                <div class="plays-summary">
-                                    <div class="plays-count">Plays</div>
-                                    <div class="plays-number">${playCount}</div>
-                                    ${game.baseball_savant && game.baseball_savant.available ? 
-                                        `<div class="savant-indicator" title="Baseball Savant: ${game.baseball_savant.plays_with_video}/${game.baseball_savant.total_plays} plays with video">⚾ ${Math.round(game.baseball_savant.coverage_percent)}%</div>` :
-                                        `<div class="savant-indicator unavailable" title="Baseball Savant: No video data">❌ No Video</div>`
-                                    }
-                                    <div class="toggle-icon">${isExpanded ? '▼' : '📅'}</div>
+                            </div>
+                            
+                            <div class="vs-divider">@</div>
+                            
+                            <div class="team-info">
+                                <div class="team-logo">${game.home_team}</div>
+                                <div>
+                                    <div class="team-name">${game.home_team}</div>
+                                    <div class="team-score">${game.home_score}</div>
                                 </div>
                             </div>
                         </div>
                         
-                        <div class="game-content" style="display: ${isExpanded ? 'block' : 'none'};">
-                            <!-- Baseball Savant Video Info -->
-                            ${game.baseball_savant && game.baseball_savant.available ? `
-                                <div class="savant-info">
-                                    <div class="savant-header">
-                                        <span class="savant-title">⚾ Baseball Savant Video Coverage</span>
-                                        <span class="savant-stats">${game.baseball_savant.plays_with_video}/${game.baseball_savant.total_plays} plays (${Math.round(game.baseball_savant.coverage_percent)}%)</span>
-                                    </div>
-                                </div>
-                            ` : `
-                                <div class="savant-info unavailable">
-                                    <div class="savant-header">
-                                        <span class="savant-title">❌ Baseball Savant: No Video Data Available</span>
-                                        <span class="savant-note">Individual play videos not available - use highlights below</span>
-                                    </div>
-                                </div>
-                            `}
-                            
-                            <!-- Individual Plays Section -->
-                            <div class="plays-section">
-                                <div class="plays-header">
-                                    <span class="plays-title">🎯 Individual Plays ${game.baseball_savant && game.baseball_savant.available ? '(Baseball Savant + MLB Highlights)' : '(MLB Highlights Only)'}</span>
-                                    <span class="plays-count">${playCount} plays available</span>
-                                </div>
-                                <div class="plays-list">
-                                    ${playCount > 0 ? renderAllPlays(game.plays, game.game_id, game.baseball_savant) : 
-                                        '<div class="no-plays"><p>No plays available yet</p></div>'}
-                                </div>
+                        <div class="game-details">
+                            <div class="game-detail">
+                                <div class="game-detail-label">Status</div>
+                                <div class="game-detail-value">${game.game_state}</div>
                             </div>
-                            
-                            <!-- NEW: Pitch-by-Pitch Section -->
-                            <div class="pitch-section">
-                                <div class="pitch-header">
-                                    <span class="pitch-title">⚾ Pitch-by-Pitch Analysis</span>
-                                    <button class="load-pitches-btn" onclick="loadPitchData(${game.game_id})">
-                                        Load Pitch Data
-                                    </button>
+                            ${game.inning && game.inning_state ? `
+                                <div class="game-detail">
+                                    <div class="game-detail-label">Inning</div>
+                                    <div class="game-detail-value">${game.inning_state}</div>
                                 </div>
-                                <div id="pitches-${game.game_id}" class="pitch-data-container">
-                                    <div class="no-pitches">Click "Load Pitch Data" to see individual pitch-by-pitch breakdown with video access</div>
-                                </div>
-                            </div>
-                            
-                            <!-- MLB API Highlights Section (Primary Method) -->
-                            <div class="highlights-section">
-                                <div class="highlights-header">
-                                    <span class="highlights-title">📺 MLB Official Highlights (Recommended)</span>
-                                    <button class="load-highlights-btn" onclick="loadHighlights(${game.game_id})">
-                                        Load Highlights
-                                    </button>
-                                </div>
-                                <div id="highlights-${game.game_id}" class="highlights-list">
-                                    <div class="no-highlights">Click "Load Highlights" to see official MLB compiled video highlights</div>
-                                </div>
+                            ` : ''}
+                            <div class="game-detail">
+                                <div class="game-detail-label">Venue</div>
+                                <div class="game-detail-value">${game.venue || 'TBD'}</div>
                             </div>
                         </div>
                     </div>
-                `;
-            });
 
-            html += '</div>'; // Close games-grid
-            container.innerHTML = html;
-        }
-
-        function renderPlayItem(play, gameId) {
-            const impactClass = play.impact_score > 0.5 ? 'high-impact' : '';
-            const gifClass = play.gif_created ? 'gif-created' : (play.gif_processing ? 'gif-processing' : '');
-            
-            // Format inning display properly
-            const inning = play.inning || 'Unknown';
-            const halfInning = play.half_inning || '';
-            const inningDisplay = halfInning ? `${inning}${halfInning.charAt(0).toUpperCase()}` : `${inning}`;
-            
-            return `
-                <div class="play-item ${impactClass} ${gifClass}">
-                    <div class="play-header">
-                        <span class="play-event">${play.event || 'Unknown Event'}</span>
-                        <span class="play-impact">WPA: ${play.wpa ? play.wpa.toFixed(3) : 'N/A'}</span>
-                    </div>
-                    <div class="play-description">${play.description || 'No description available'}</div>
-                    <div class="play-details">
-                        <div class="details-grid">
-                            <div class="detail-item">
-                                <div class="detail-label">Inning</div>
-                                <div class="detail-value">${inningDisplay}</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Outs</div>
-                                <div class="detail-value">${play.outs || 0}</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Batter</div>
-                                <div class="detail-value">${play.batter || 'Unknown'}</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Pitcher</div>
-                                <div class="detail-value">${play.pitcher || 'Unknown'}</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Impact</div>
-                                <div class="detail-value">${play.impact_score ? play.impact_score.toFixed(2) : 'N/A'}</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Score</div>
-                                <div class="detail-value">${play.away_score || 0} - ${play.home_score || 0}</div>
-                            </div>
-                        </div>
-                        <div class="play-actions">
-                            <button class="create-gif-btn" 
-                                    onclick="createGif('${play.play_id}')"
-                                    ${play.gif_created || play.gif_processing ? 'disabled' : ''}>
-                                ${play.gif_processing ? '⏳ Processing...' : 
-                                  play.gif_created ? '✅ GIF Created' : '🎬 Create GIF'}
-                            </button>
+                    <div class="pitch-data-section">
+                        <button class="load-pitch-btn" onclick="loadPitchData(${game.game_id}, this)">
+                            📊 Load Pitch Data
+                        </button>
+                        <div id="pitches-${game.game_id}" class="no-pitches" style="display: none;">
+                            No pitch data loaded
                         </div>
                     </div>
                 </div>
-            `;
+            `).join('');
         }
 
-        function renderAllPlays(plays, gameId, savantInfo) {
-            if (!plays || plays.length === 0) {
-                return '<div class="no-plays"><p>No plays available</p></div>';
-            }
-
-            let html = '';
-            plays.forEach(play => {
-                const impactClass = play.impact_score > 0.5 ? 'high-impact' : '';
-                const gifClass = play.gif_created ? 'gif-created' : (play.gif_processing ? 'gif-processing' : '');
-                
-                // Format inning display properly
-                const inning = play.inning || 'Unknown';
-                const halfInning = play.half_inning || '';
-                const inningDisplay = halfInning ? `${inning}${halfInning.charAt(0).toUpperCase()}` : `${inning}`;
-                
-                // Determine video availability based on actual play data
-                let videoIndicator = '';
-                const videoAvailability = play.video_availability || 'unknown';
-                
-                if (videoAvailability === 'savant-available') {
-                    videoIndicator = '<span class="play-video-indicator savant-available">⚾ Savant Video</span>';
-                } else if (videoAvailability === 'savant-unavailable' || videoAvailability === 'savant-unknown') {
-                    videoIndicator = '<span class="play-video-indicator highlight-only">📺 Highlight Only</span>';
-                } else if (videoAvailability === 'highlight-only') {
-                    videoIndicator = '<span class="play-video-indicator highlight-only">📺 Highlight Only</span>';
-                } else if (videoAvailability === 'no-savant') {
-                    videoIndicator = '<span class="play-video-indicator no-video">❌ No Savant</span>';
-                } else {
-                    // Fallback to old logic for compatibility
-                    if (savantInfo && savantInfo.available && savantInfo.coverage_percent > 50) {
-                        videoIndicator = '<span class="play-video-indicator savant-available">⚾ Savant Video</span>';
-                    } else {
-                        videoIndicator = '<span class="play-video-indicator highlight-only">📺 Highlight Only</span>';
-                    }
-                }
-                
-                html += `
-                    <div class="play-item ${impactClass} ${gifClass}">
-                        <div class="play-header">
-                            <div class="play-event-section">
-                                <span class="play-event">${play.event || 'Unknown Event'}</span>
-                                ${videoIndicator}
-                            </div>
-                            <span class="play-impact">WPA: ${play.wpa ? play.wpa.toFixed(3) : 'N/A'}</span>
-                        </div>
-                        <div class="play-description">${play.description || 'No description available'}</div>
-                        <div class="play-details">
-                            <div class="details-grid">
-                                <div class="detail-item">
-                                    <div class="detail-label">Inning</div>
-                                    <div class="detail-value">${inningDisplay}</div>
-                                </div>
-                                <div class="detail-item">
-                                    <div class="detail-label">Outs</div>
-                                    <div class="detail-value">${play.outs || 0}</div>
-                                </div>
-                                <div class="detail-item">
-                                    <div class="detail-label">Batter</div>
-                                    <div class="detail-value">${play.batter || 'Unknown'}</div>
-                                </div>
-                                <div class="detail-item">
-                                    <div class="detail-label">Pitcher</div>
-                                    <div class="detail-value">${play.pitcher || 'Unknown'}</div>
-                                </div>
-                                <div class="detail-item">
-                                    <div class="detail-label">Impact</div>
-                                    <div class="detail-value">${play.impact_score ? play.impact_score.toFixed(2) : 'N/A'}</div>
-                                </div>
-                                <div class="detail-item">
-                                    <div class="detail-label">Score</div>
-                                    <div class="detail-value">${play.away_score || 0} - ${play.home_score || 0}</div>
-                                </div>
-                            </div>
-                            <div class="play-actions">
-                                <button class="create-gif-btn" 
-                                        onclick="createGif('${play.play_id}')"
-                                        ${play.gif_created || play.gif_processing ? 'disabled' : ''}>
-                                    ${play.gif_processing ? '⏳ Processing...' : 
-                                      play.gif_created ? '✅ GIF Created' : '🎬 Create GIF'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            return html;
-        }
-
-        function getStatusClass(status) {
-            if (['Live', 'I', 'M', 'O'].includes(status)) return 'live';
-            if (['Warmup', 'W', 'P'].includes(status)) return 'warmup';
-            if (['Scheduled', 'S', 'PR'].includes(status)) return 'scheduled';
-            if (['Final', 'F', 'C', 'D'].includes(status)) return 'final';
-            return 'scheduled';
-        }
-
-        function getStatusDisplay(status) {
-            const statusMap = {
-                'Live': '🔴 Live',
-                'I': '🔴 Live',
-                'M': '🔴 Live', 
-                'O': '🔴 Live',
-                'Warmup': '🟡 Warmup',
-                'W': '🟡 Warmup',
-                'P': '🟡 Pre-Game',
-                'Scheduled': '📅 Scheduled',
-                'S': '📅 Scheduled',
-                'PR': '📅 Preview',
-                'Final': '✅ Final',
-                'F': '✅ Final',
-                'C': '✅ Complete',
-                'D': '✅ Delayed'
-            };
-            return statusMap[status] || `📅 ${status}`;
-        }
-
-        async function createGif(playId) {
-            try {
-                const response = await fetch('/api/create_gif', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ play_id: playId })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    showToast('🎬 Video GIF created and sent to Telegram!', 'success');
-                    
-                    // Refresh data to update play status
-                    setTimeout(loadGames, 1000);
-                } else {
-                    // Show specific error message
-                    if (result.error.includes('No Baseball Savant video available')) {
-                        showToast('⚠️ No Baseball Savant video available for this play. Individual play videos are not available from Baseball Savant for this game.', 'warning');
-                    } else if (result.error.includes('No video data available')) {
-                        showToast('⚠️ No video footage available for this play. Only plays with Baseball Savant video can be converted to GIFs.', 'warning');
-                    } else if (result.error.includes('No Statcast data')) {
-                        showToast('⚠️ No Statcast data found for this play. Video may not be available yet.', 'warning');
-                    } else {
-                        showToast(`❌ Failed to create GIF: ${result.error}`, 'error');
-                    }
-                }
-
-            } catch (error) {
-                console.error('Error creating GIF:', error);
-                showToast('❌ Failed to create video GIF', 'error');
-            }
-        }
-
-        function showToast(message, type = 'success') {
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.textContent = message;
-            document.body.appendChild(toast);
-
-            // Show toast
-            setTimeout(() => toast.classList.add('show'), 100);
-
-            // Hide and remove toast
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        async function loadHighlights(gameId) {
-            const button = event.target;
-            const highlightsContainer = document.getElementById(`highlights-${gameId}`);
-            
-            // Show loading state
-            button.disabled = true;
-            button.textContent = 'Loading...';
-            highlightsContainer.innerHTML = '<div class="no-highlights">Loading highlights...</div>';
-            
-            try {
-                const response = await fetch(`/api/highlights/${gameId}`);
-                const result = await response.json();
-                
-                if (result.success && result.highlights.length > 0) {
-                    let highlightsHtml = '';
-                    result.highlights.forEach((highlight, index) => {
-                        highlightsHtml += `
-                            <div class="highlight-item">
-                                <div class="highlight-content">
-                                    <div class="highlight-title">${highlight.title}</div>
-                                    <div class="highlight-details">
-                                        <span>Duration: ${highlight.duration}</span>
-                                        <span>${highlight.has_video ? '✅ Video Available' : '❌ No Video'}</span>
-                                    </div>
-                                    ${highlight.description ? `<div class="highlight-description">${highlight.description}</div>` : ''}
-                                </div>
-                                <div class="highlight-actions">
-                                    <button class="create-highlight-gif-btn" 
-                                            onclick="createHighlightGif(${gameId}, ${index})"
-                                            ${!highlight.has_video ? 'disabled' : ''}>
-                                        ${highlight.has_video ? '🎬 Create GIF' : '❌ No Video'}
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                    });
-                    highlightsContainer.innerHTML = highlightsHtml;
-                    
-                    // Update button to show count
-                    button.textContent = `${result.count} Highlights Available`;
-                    
-                } else {
-                    highlightsContainer.innerHTML = '<div class="no-highlights">No highlights available for this game</div>';
-                    button.textContent = 'No Highlights';
-                }
-                
-            } catch (error) {
-                console.error('Error loading highlights:', error);
-                highlightsContainer.innerHTML = '<div class="no-highlights">Error loading highlights</div>';
-                button.textContent = 'Error Loading';
-            }
-            
-            // Re-enable button after 2 seconds
-            setTimeout(() => {
-                button.disabled = false;
-            }, 2000);
-        }
-
-        async function createHighlightGif(gameId, highlightIndex) {
-            try {
-                const response = await fetch('/api/create_highlight_gif', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ 
-                        game_id: gameId, 
-                        highlight_index: highlightIndex 
-                    })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    showToast('🎬 Highlight GIF created and sent to Telegram!', 'success');
-                    
-                    // Update button to show success
-                    const button = event.target;
-                    button.textContent = '✅ GIF Created';
-                    button.disabled = true;
-                    
-                } else {
-                    showToast(`❌ Failed to create highlight GIF: ${result.error}`, 'error');
-                }
-
-            } catch (error) {
-                console.error('Error creating highlight GIF:', error);
-                showToast('❌ Failed to create highlight GIF', 'error');
-            }
-        }
-
-        // NEW: Pitch-by-Pitch Functions
-        async function loadPitchData(gameId) {
-            const button = event.target;
+        async function loadPitchData(gameId, button) {
             const pitchContainer = document.getElementById(`pitches-${gameId}`);
             
             // Show loading state
             button.disabled = true;
-            button.textContent = 'Loading...';
-            pitchContainer.innerHTML = '<div class="no-pitches">Loading pitch data...</div>';
+            button.innerHTML = '<div class="loading"></div> Loading...';
+            pitchContainer.style.display = 'block';
+            
+            // Show skeleton loading
+            pitchContainer.innerHTML = `
+                <div class="pitch-summary">
+                    <div class="skeleton-loader"></div>
+                    <div class="skeleton-loader" style="width: 60%;"></div>
+                </div>
+                <div class="skeleton-loader"></div>
+                <div class="skeleton-loader"></div>
+            `;
             
             try {
                 const response = await fetch(`/api/pitch_data/${gameId}`);
@@ -1860,18 +882,29 @@
                     const pitchData = result.data;
                     let pitchHtml = '';
                     
-                    // Count total pitches
+                    // Count total pitches and notable pitches
                     let totalPitches = 0;
+                    let notablePitches = 0;
                     Object.values(pitchData.half_innings).forEach(halfInning => {
                         Object.values(halfInning.at_bats).forEach(atBat => {
                             totalPitches += atBat.pitches.length;
+                            atBat.pitches.forEach(pitch => {
+                                if (isNotablePitch(pitch)) notablePitches++;
+                            });
                         });
                     });
                     
                     pitchHtml += `
                         <div class="pitch-summary">
                             <strong>Game:</strong> ${pitchData.game_info.away_team} @ ${pitchData.game_info.home_team}<br>
-                            <strong>Total Individual Pitches:</strong> ${totalPitches}
+                            <strong>Total Individual Pitches:</strong> ${totalPitches} 
+                            ${notablePitches > 0 ? `| <strong>Notable Pitches:</strong> ${notablePitches}` : ''}
+                        </div>
+                        
+                        <div class="pitch-data-controls">
+                            <button class="btn btn-info btn-small" onclick="expandGameSections(${gameId})">📂 Expand All</button>
+                            <button class="btn btn-info btn-small" onclick="collapseGameSections(${gameId})">📁 Collapse All</button>
+                            ${notablePitches > 0 ? `<button class="btn btn-info btn-small" onclick="highlightNotablePitches(${gameId})">⭐ Show Notable</button>` : ''}
                         </div>
                     `;
                     
@@ -1881,34 +914,40 @@
                         const [bHalf, bInning] = b[0].split('_');
                         const inningDiff = parseInt(aInning) - parseInt(bInning);
                         if (inningDiff !== 0) return inningDiff;
-                        return aHalf === 'top' ? -1 : 1; // top comes before bottom
+                        return aHalf === 'top' ? -1 : 1;
                     });
                     
                     sortedHalfInnings.forEach(([halfInningKey, halfInning]) => {
                         const atBatCount = Object.keys(halfInning.at_bats).length;
                         const pitchCount = Object.values(halfInning.at_bats).reduce((sum, atBat) => sum + atBat.pitches.length, 0);
                         
+                        // Auto-expand current inning for live games
+                        const game = allGamesData.find(g => g.game_id === gameId);
+                        const isCurrentInning = game && game.category === 'live' && halfInning.inning === game.inning;
+                        
                         pitchHtml += `
                             <div class="half-inning-section">
                                 <div class="half-inning-header" onclick="toggleHalfInning('${gameId}', '${halfInningKey}')">
                                     <span class="half-inning-title">${halfInning.display_name}</span>
                                     <span class="half-inning-stats">${atBatCount} at-bats, ${pitchCount} pitches</span>
-                                    <span class="toggle-icon" id="toggle-${gameId}-${halfInningKey}">▶</span>
+                                    <span class="toggle-icon ${isCurrentInning ? 'expanded' : ''}" id="toggle-${gameId}-${halfInningKey}">${isCurrentInning ? '▼' : '▶'}</span>
                                 </div>
-                                <div class="half-inning-content" id="content-${gameId}-${halfInningKey}" style="display: none;">
+                                <div class="half-inning-content" id="content-${gameId}-${halfInningKey}" style="display: ${isCurrentInning ? 'block' : 'none'};">
                         `;
                         
-                        // Sort at-bats by batter name for consistency
+                        // Sort at-bats by sequence
                         const sortedAtBats = Object.entries(halfInning.at_bats).sort((a, b) => 
                             a[1].batter_name.localeCompare(b[1].batter_name)
                         );
                         
                         sortedAtBats.forEach(([atBatKey, atBat]) => {
+                            const resultClass = getResultClass(atBat.result);
+                            
                             pitchHtml += `
                                 <div class="at-bat-section">
                                     <div class="at-bat-header" onclick="toggleAtBat('${gameId}', '${halfInningKey}', '${atBatKey}')">
                                         <span class="at-bat-title">${atBat.batter_name}</span>
-                                        <span class="at-bat-result">${atBat.result}</span>
+                                        <span class="at-bat-result ${resultClass}">${atBat.result}</span>
                                         <span class="at-bat-pitch-count">${atBat.pitch_count} pitches</span>
                                         <span class="toggle-icon" id="toggle-${gameId}-${halfInningKey}-${atBatKey}">▶</span>
                                     </div>
@@ -1917,18 +956,24 @@
                             
                             // Display each individual pitch
                             atBat.pitches.forEach((pitch, pitchIndex) => {
+                                const isNotable = isNotablePitch(pitch);
+                                const velocityClass = pitch.velocity >= 100 ? 'fast' : '';
+                                
                                 pitchHtml += `
-                                    <div class="individual-pitch">
+                                    <div class="individual-pitch ${isNotable ? 'notable' : ''}" data-pitch-type="${pitch.pitch_type.toLowerCase()}">
                                         <div class="pitch-info">
+                                            <div class="pitch-header">
+                                                <div>
+                                                    <span class="pitch-type-badge">${pitch.pitch_type}</span>
+                                                    <span class="velocity-badge ${velocityClass}">${pitch.velocity} mph</span>
+                                                    ${isNotable ? '<span class="velocity-badge" style="background: #ffc107; color: #000;">⭐ Notable</span>' : ''}
+                                                </div>
+                                                <div class="pitch-detail"><strong>Count:</strong> ${pitch.count}</div>
+                                            </div>
+                                            
                                             <div class="pitch-details-grid">
                                                 <div class="pitch-detail">
-                                                    <strong>Pitch ${pitch.pitch_number}:</strong> ${pitch.pitch_type}
-                                                </div>
-                                                <div class="pitch-detail">
-                                                    <strong>Velocity:</strong> ${pitch.velocity} mph
-                                                </div>
-                                                <div class="pitch-detail">
-                                                    <strong>Count:</strong> ${pitch.count}
+                                                    <strong>Pitch #${pitch.pitch_number}</strong>
                                                 </div>
                                                 <div class="pitch-detail">
                                                     <strong>Result:</strong> ${pitch.result}
@@ -1936,11 +981,14 @@
                                                 <div class="pitch-detail">
                                                     <strong>Pitcher:</strong> ${pitch.pitcher_name}
                                                 </div>
+                                                <div class="pitch-detail">
+                                                    <strong>Batter:</strong> ${pitch.batter_name}
+                                                </div>
                                             </div>
                                         </div>
                                         <div class="pitch-actions">
                                             <button class="create-pitch-gif-btn" 
-                                                    onclick="createPitchGif('${gameId}', '${pitch.play_id}', '${pitch.team_batting}', ${JSON.stringify(pitch).replace(/"/g, '&quot;')})">
+                                                    onclick="createPitchGif('${gameId}', '${pitch.play_id}', '${pitch.team_batting}', ${JSON.stringify(pitch).replace(/"/g, '&quot;')}, this)">
                                                 🎬 Create Pitch GIF
                                             </button>
                                         </div>
@@ -1961,23 +1009,56 @@
                     });
                     
                     pitchContainer.innerHTML = pitchHtml;
-                    button.textContent = `${totalPitches} Pitches Available`;
+                    button.innerHTML = `📊 ${totalPitches} Pitches Available`;
                     
                 } else {
                     pitchContainer.innerHTML = '<div class="no-pitches">No pitch data available for this game</div>';
-                    button.textContent = 'No Pitch Data';
+                    button.innerHTML = '📊 No Pitch Data';
                 }
                 
             } catch (error) {
                 console.error('Error loading pitch data:', error);
                 pitchContainer.innerHTML = '<div class="no-pitches">Error loading pitch data</div>';
-                button.textContent = 'Error Loading';
+                button.innerHTML = '📊 Error Loading';
             }
             
-            // Re-enable button after 2 seconds
             setTimeout(() => {
                 button.disabled = false;
             }, 2000);
+        }
+
+        function isNotablePitch(pitch) {
+            return pitch.velocity >= 100 || 
+                   pitch.result.toLowerCase().includes('strikeout') ||
+                   pitch.result.toLowerCase().includes('home run') ||
+                   pitch.pitch_type.toLowerCase().includes('knuckleball');
+        }
+
+        function getResultClass(result) {
+            const lower = result.toLowerCase();
+            if (lower.includes('strikeout')) return 'strikeout';
+            if (lower.includes('home run')) return 'home-run';
+            return '';
+        }
+
+        function filterPitches() {
+            const pitchFilter = document.getElementById('pitchFilter').value;
+            currentFilters.pitchFilter = pitchFilter;
+            
+            document.querySelectorAll('.individual-pitch').forEach(pitch => {
+                let shouldShow = true;
+                
+                if (pitchFilter === 'notable') {
+                    shouldShow = pitch.classList.contains('notable');
+                } else if (pitchFilter === 'strikeouts') {
+                    shouldShow = pitch.textContent.toLowerCase().includes('strikeout');
+                } else if (pitchFilter === 'fast') {
+                    shouldShow = pitch.textContent.includes('mph') && 
+                                parseInt(pitch.textContent.match(/(\d+) mph/)?.[1] || 0) >= 100;
+                }
+                
+                pitch.style.display = shouldShow ? 'block' : 'none';
+            });
         }
 
         function toggleHalfInning(gameId, halfInningKey) {
@@ -1987,9 +1068,11 @@
             if (content.style.display === 'none') {
                 content.style.display = 'block';
                 toggle.textContent = '▼';
+                toggle.classList.add('expanded');
             } else {
                 content.style.display = 'none';
                 toggle.textContent = '▶';
+                toggle.classList.remove('expanded');
             }
         }
 
@@ -2000,13 +1083,85 @@
             if (content.style.display === 'none') {
                 content.style.display = 'block';
                 toggle.textContent = '▼';
+                toggle.classList.add('expanded');
             } else {
                 content.style.display = 'none';
                 toggle.textContent = '▶';
+                toggle.classList.remove('expanded');
             }
         }
 
-        async function createPitchGif(gameId, playId, teamBatting, pitchInfo) {
+        function expandAllSections() {
+            document.querySelectorAll('.half-inning-content, .at-bat-content').forEach(content => {
+                content.style.display = 'block';
+            });
+            document.querySelectorAll('.toggle-icon').forEach(toggle => {
+                toggle.textContent = '▼';
+                toggle.classList.add('expanded');
+            });
+        }
+
+        function collapseAllSections() {
+            document.querySelectorAll('.half-inning-content, .at-bat-content').forEach(content => {
+                content.style.display = 'none';
+            });
+            document.querySelectorAll('.toggle-icon').forEach(toggle => {
+                toggle.textContent = '▶';
+                toggle.classList.remove('expanded');
+            });
+        }
+
+        function expandGameSections(gameId) {
+            document.querySelectorAll(`[id^="content-${gameId}-"]`).forEach(content => {
+                content.style.display = 'block';
+            });
+            document.querySelectorAll(`[id^="toggle-${gameId}-"]`).forEach(toggle => {
+                toggle.textContent = '▼';
+                toggle.classList.add('expanded');
+            });
+        }
+
+        function collapseGameSections(gameId) {
+            document.querySelectorAll(`[id^="content-${gameId}-"]`).forEach(content => {
+                content.style.display = 'none';
+            });
+            document.querySelectorAll(`[id^="toggle-${gameId}-"]`).forEach(toggle => {
+                toggle.textContent = '▶';
+                toggle.classList.remove('expanded');
+            });
+        }
+
+        function highlightNotablePitches(gameId) {
+            // First collapse all
+            collapseGameSections(gameId);
+            
+            // Then expand sections containing notable pitches
+            document.querySelectorAll(`[data-game-id="${gameId}"] .individual-pitch.notable`).forEach(pitch => {
+                let current = pitch;
+                while (current) {
+                    if (current.classList.contains('at-bat-content') || current.classList.contains('half-inning-content')) {
+                        current.style.display = 'block';
+                        
+                        // Update corresponding toggle
+                        const contentId = current.id;
+                        const toggleId = contentId.replace('content-', 'toggle-');
+                        const toggle = document.getElementById(toggleId);
+                        if (toggle) {
+                            toggle.textContent = '▼';
+                            toggle.classList.add('expanded');
+                        }
+                    }
+                    current = current.parentElement;
+                }
+            });
+        }
+
+        async function createPitchGif(gameId, playId, teamBatting, pitchInfo, button) {
+            // Show loading state
+            const originalText = button.textContent;
+            button.disabled = true;
+            button.innerHTML = '<div class="loading"></div> Creating...';
+            
             try {
                 const response = await fetch('/api/create_pitch_gif', {
                     method: 'POST',
@@ -2024,22 +1179,48 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    showToast(`🎬 Pitch GIF created and sent to Telegram! ${pitchInfo.pitch_type} ${pitchInfo.velocity}mph`, 'success');
+                    showToast(`🎬 Pitch GIF created and sent! ${pitchInfo.pitch_type} ${pitchInfo.velocity}mph`, 'success');
                     
                     // Update button to show success
-                    const button = event.target;
                     button.textContent = '✅ GIF Created';
-                    button.disabled = true;
-                    button.style.background = 'linear-gradient(45deg, #28a745, #1e7e34)';
+                    button.classList.add('success');
                     
                 } else {
                     showToast(`❌ Failed to create pitch GIF: ${result.error}`, 'error');
+                    button.textContent = originalText;
+                    button.disabled = false;
                 }
 
             } catch (error) {
                 console.error('Error creating pitch GIF:', error);
                 showToast('❌ Failed to create pitch GIF', 'error');
+                button.textContent = originalText;
+                button.disabled = false;
             }
+        }
+
+        function refreshDashboard() {
+            loadGames();
+            showToast('Dashboard refreshed', 'success');
+        }
+
+        function showToast(message, type = 'success') {
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => toast.classList.add('show'), 100);
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
         }
     </script>
 </body>

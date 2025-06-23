@@ -679,10 +679,12 @@ class MLBHighlightGIFIntegration:
                     half_inning_key = f"{inning_half}_{inning}"
                     
                     if half_inning_key not in organized_data['half_innings']:
+                        # Fix team assignment: top = away team batting, bottom = home team batting
+                        batting_team = organized_data['game_info']['away_team'] if inning_half == 'top' else organized_data['game_info']['home_team']
                         organized_data['half_innings'][half_inning_key] = {
                             'inning': inning,
                             'half': inning_half,
-                            'display_name': f"{inning_half.title()} {inning}",
+                            'display_name': f"{batting_team} Batting - Inning {inning} ({inning_half.title()})",
                             'at_bats': {}
                         }
                     

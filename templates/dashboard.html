@@ -660,6 +660,139 @@
             display: none !important;
         }
 
+        /* High-Impact Plays Styles */
+        .high-impact-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 107, 0, 0.1));
+            border-radius: 12px;
+            border-left: 4px solid #ffc107;
+        }
+
+        .high-impact-header h2 {
+            margin: 0;
+            color: #ffc107;
+        }
+
+        .high-impact-summary {
+            text-align: center;
+            padding: 15px;
+            margin-bottom: 25px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            color: #ccc;
+        }
+
+        .high-impact-play {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffc107;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .high-impact-play:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 193, 7, 0.2);
+        }
+
+        .play-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .play-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .play-title strong {
+            font-size: 1.2em;
+            color: #00d4ff;
+        }
+
+        .wpa-badge {
+            background: linear-gradient(45deg, #ffc107, #ff8f00);
+            color: #000;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .game-context {
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        .play-details {
+            padding: 20px;
+        }
+
+        .play-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+        }
+
+        .play-detail-grid div {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+
+        .play-description {
+            background: rgba(0, 212, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-style: italic;
+            border-left: 3px solid #00d4ff;
+        }
+
+        .play-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .create-gif-btn {
+            padding: 12px 20px;
+            font-size: 1em;
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .create-gif-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .create-gif-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .create-gif-btn.success {
+            background: linear-gradient(45deg, #17a2b8, #138496);
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 10px;
@@ -1263,6 +1396,146 @@
         function refreshData() {
             loadGames();
             showToast('Dashboard refreshed', 'success');
+        }
+
+        function showNotable() {
+            // Filter and display only high-impact plays (40%+ WPA)
+            let highImpactPlays = [];
+            
+            // Collect all high-impact plays from all games
+            allGamesData.forEach(game => {
+                if (game.plays && game.plays.length > 0) {
+                    const notablePlays = game.plays.filter(play => {
+                        // Filter for plays with WPA >= 0.4 (40% win probability change)
+                        const wpa = Math.abs(play.wpa || 0);
+                        return wpa >= 0.4;
+                    });
+                    
+                    notablePlays.forEach(play => {
+                        highImpactPlays.push({
+                            ...play,
+                            game_info: {
+                                home_team: game.home_team,
+                                away_team: game.away_team,
+                                venue: game.venue,
+                                game_state: game.game_state
+                            }
+                        });
+                    });
+                }
+            });
+            
+            // Sort by WPA impact (highest first)
+            highImpactPlays.sort((a, b) => Math.abs(b.wpa || 0) - Math.abs(a.wpa || 0));
+            
+            if (highImpactPlays.length === 0) {
+                showToast('No high-impact plays found (40%+ WPA)', 'info');
+                return;
+            }
+            
+            // Create modal or replace content with high-impact plays
+            showHighImpactPlays(highImpactPlays);
+            showToast(`Found ${highImpactPlays.length} high-impact plays`, 'success');
+        }
+
+        function showHighImpactPlays(plays) {
+            const container = document.getElementById('games-container');
+            
+            let html = `
+                <div class="high-impact-header">
+                    <h2>⭐ High-Impact Plays (40%+ Win Probability)</h2>
+                    <button class="btn btn-secondary" onclick="loadGames()">🔙 Back to All Games</button>
+                </div>
+                <div class="high-impact-summary">
+                    Found <strong>${plays.length}</strong> plays with significant win probability impact
+                </div>
+            `;
+            
+            plays.forEach((play, index) => {
+                const wpaPercent = Math.abs(play.wpa || 0) * 100;
+                const wpaDirection = (play.wpa || 0) >= 0 ? '📈' : '📉';
+                
+                html += `
+                    <div class="high-impact-play">
+                        <div class="play-header">
+                            <div class="play-title">
+                                <strong>${play.event}</strong>
+                                <span class="wpa-badge">${wpaDirection} ${wpaPercent.toFixed(1)}% WPA</span>
+                            </div>
+                            <div class="game-context">
+                                ${play.game_info.away_team} @ ${play.game_info.home_team} - ${play.game_info.game_state}
+                            </div>
+                        </div>
+                        
+                        <div class="play-details">
+                            <div class="play-detail-grid">
+                                <div><strong>Batter:</strong> ${play.batter}</div>
+                                <div><strong>Pitcher:</strong> ${play.pitcher}</div>
+                                <div><strong>Inning:</strong> ${play.inning} ${play.half_inning}</div>
+                                <div><strong>Score:</strong> ${play.away_score}-${play.home_score}</div>
+                                <div><strong>Leverage:</strong> ${play.leverage_index?.toFixed(2) || 'N/A'}</div>
+                                <div><strong>Impact:</strong> ${(play.impact_score * 100).toFixed(1)}%</div>
+                            </div>
+                            
+                            <div class="play-description">
+                                ${play.description}
+                            </div>
+                            
+                            <div class="play-actions">
+                                <button class="btn btn-primary create-gif-btn" 
+                                        onclick="createHighImpactGif('${play.play_id}', this)"
+                                        ${play.gif_created ? 'disabled' : ''}>
+                                    ${play.gif_processing ? 
+                                        '<div class="loading"></div> Creating...' : 
+                                        play.gif_created ? 
+                                            '✅ GIF Created' : 
+                                            '🎬 Create GIF'
+                                    }
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        async function createHighImpactGif(playId, button) {
+            // Show loading state
+            const originalText = button.textContent;
+            button.disabled = true;
+            button.innerHTML = '<div class="loading"></div> Creating GIF...';
+            
+            try {
+                const response = await fetch('/api/create_gif', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        play_id: playId
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast('🎬 High-impact GIF created and sent to Telegram!', 'success');
+                    button.textContent = '✅ GIF Created';
+                    button.classList.add('success');
+                } else {
+                    showToast(`❌ ${result.error}`, 'error');
+                    button.textContent = originalText;
+                    button.disabled = false;
+                }
+
+            } catch (error) {
+                console.error('Error creating GIF:', error);
+                showToast('❌ Failed to create GIF', 'error');
+                button.textContent = originalText;
+                button.disabled = false;
+            }
         }
 
         function showToast(message, type = 'success') {

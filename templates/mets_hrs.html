@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏠 Mets Home Runs Dashboard 🏠</title>
+    <title>Mets Scoring Plays Tracker</title>
     <style>
         * {
             margin: 0;
@@ -361,13 +361,35 @@
                 flex-wrap: wrap;
             }
         }
+
+        .stats-section {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #ff6b35;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.8em;
+            opacity: 0.7;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🏠 Mets Home Runs Dashboard 🏠</h1>
-            <p>Automatic Detection & Telegram Notifications</p>
+            <h1>🧡💙 Mets Scoring Plays Tracker</h1>
+            <p>Automatic detection and GIF creation for all Mets scoring plays</p>
             <div class="mets-motto">LET'S GO METS! 🧡💙</div>
         </div>
 
@@ -382,8 +404,8 @@
             </div>
 
             <div class="status-card">
-                <div class="status-title">Home Runs Today</div>
-                <div class="status-value" id="hrs-today">0</div>
+                <div class="status-title">Scoring Plays Today</div>
+                <div class="status-value" id="plays-today">0</div>
                 <div class="status-subtitle">Detected & sent to Telegram</div>
             </div>
 
@@ -407,12 +429,38 @@
         </div>
 
         <div class="home-runs-section">
-            <div class="section-title">🏠 Recent Mets Home Runs 🏠</div>
-            <div class="home-runs-grid" id="home-runs-container">
-                <div class="no-home-runs">
-                    <div class="loading"></div>
-                    <p>Loading recent Mets home runs...</p>
-                </div>
+            <div class="section-title">📊 Recent Scoring Plays</div>
+            <div class="section-controls">
+                <select id="limitSelect" onchange="loadRecentPlays()">
+                    <option value="10">Last 10</option>
+                    <option value="20" selected>Last 20</option>
+                    <option value="50">Last 50</option>
+                </select>
+            </div>
+            <div class="home-runs-grid" id="recent-plays">
+                <div class="loading-message">Loading recent scoring plays...</div>
+            </div>
+        </div>
+
+        <div class="stats-section">
+            <div class="stat-card">
+                <div class="stat-number" id="plays-detected">0</div>
+                <div class="stat-label">Scoring Plays Detected</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-number" id="gifs-created">0</div>
+                <div class="stat-label">GIFs Created</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-number" id="notifications-sent">0</div>
+                <div class="stat-label">Notifications Sent</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-number" id="queue-size">0</div>
+                <div class="stat-label">Queue Size</div>
             </div>
         </div>
     </div>
@@ -430,7 +478,7 @@
         async function loadData() {
             await Promise.all([
                 loadTrackerStatus(),
-                loadRecentHomeRuns()
+                loadRecentPlays()
             ]);
         }
 
@@ -446,86 +494,99 @@
                     document.getElementById('tracker-status').textContent = status.monitoring ? 'Active' : 'Inactive';
                     document.getElementById('tracker-indicator').className = `status-indicator ${status.monitoring ? '' : 'inactive'}`;
                     document.getElementById('tracker-uptime').textContent = status.uptime || '--';
-                    document.getElementById('last-check').textContent = status.last_check ? 
-                        new Date(status.last_check).toLocaleTimeString() : 'Never';
-                    document.getElementById('queue-size').textContent = status.queue_size || 0;
                     
-                    // Update stats
+                    // Update stats display
                     const stats = status.stats || {};
-                    document.getElementById('hrs-today').textContent = stats.homeruns_sent_today || 0;
-                    document.getElementById('gifs-today').textContent = stats.gifs_created_today || 0;
+                    document.getElementById('plays-detected').textContent = stats.plays_detected || 0;
+                    document.getElementById('gifs-created').textContent = stats.gifs_created || 0;
+                    document.getElementById('notifications-sent').textContent = stats.notifications_sent || 0;
+                    
+                    // Update last check time
+                    const lastCheck = status.last_check ? new Date(status.last_check).toLocaleTimeString() : 'Never';
+                    document.getElementById('last-check').textContent = lastCheck;
+                    
+                    // Update queue size
+                    document.getElementById('queue-size').textContent = status.queue_size || 0;
+                } else {
+                    // Default values if no status
+                    document.getElementById('plays-detected').textContent = '0';
+                    document.getElementById('gifs-created').textContent = '0';
+                    document.getElementById('notifications-sent').textContent = '0';
+                    document.getElementById('last-check').textContent = 'Never';
+                    document.getElementById('queue-size').textContent = '0';
                 }
 
             } catch (error) {
                 console.error('Error loading tracker status:', error);
-                showToast('Error loading tracker status', 'error');
+                document.getElementById('status-text').textContent = 'Error';
+                document.getElementById('status-indicator').className = 'status-indicator inactive';
             }
         }
 
-        async function loadRecentHomeRuns() {
+        async function loadRecentPlays() {
             try {
-                const response = await fetch('/api/mets_hr_recent?limit=20');
+                const limit = document.getElementById('limitSelect').value;
+                const response = await fetch(`/api/mets_hr_recent?limit=${limit}`);
                 const data = await response.json();
 
                 if (data.success) {
-                    renderHomeRuns(data.home_runs || []);
+                    renderPlays(data.scoring_plays || []);
                 } else {
-                    renderHomeRuns([]);
+                    renderPlays([]);
                 }
 
             } catch (error) {
-                console.error('Error loading home runs:', error);
-                renderHomeRuns([]);
+                console.error('Error loading scoring plays:', error);
+                renderPlays([]);
             }
         }
 
-        function renderHomeRuns(homeRuns) {
-            const container = document.getElementById('home-runs-container');
+        function renderPlays(plays) {
+            const container = document.getElementById('recent-plays');
 
-            if (!homeRuns || homeRuns.length === 0) {
+            if (!plays || plays.length === 0) {
                 container.innerHTML = `
                     <div class="no-home-runs">
-                        <h3>🏠 No Recent Mets Home Runs</h3>
-                        <p>The background tracker is monitoring for Mets HRs.<br>Home runs will appear here automatically when detected!</p>
+                        <h3>📊 No Recent Mets Scoring Plays</h3>
+                        <p>The background tracker is monitoring for Mets scoring plays.<br>Scoring plays will appear here automatically when detected!</p>
+                        <div class="mets-chant">LET'S GO METS! 🧡💙</div>
                     </div>
                 `;
                 return;
             }
 
-            container.innerHTML = homeRuns.map(hr => `
+            container.innerHTML = plays.map(play => `
                 <div class="home-run-card">
-                    ${hr.telegram_sent ? '<div class="telegram-badge">✅ Sent to Telegram</div>' : ''}
+                    ${play.gif_created ? '<div class="telegram-badge">✅ GIF Created & Sent</div>' : ''}
                     
-                    <div class="player-name">${hr.player_name}</div>
-                    <div class="game-info">${hr.away_team} @ ${hr.home_team} - Inning ${hr.inning} (${hr.half_inning})</div>
-                    <div class="hr-description">${hr.description}</div>
+                    <div class="player-name">${play.batter}</div>
+                    <div class="game-info">Game ${play.game_id} - Inning ${play.inning} (${play.half_inning})</div>
+                    <div class="hr-description">${play.description}</div>
                     
                     <div class="hr-stats">
-                        ${hr.exit_velocity ? `
-                            <div class="hr-stat">
-                                <div class="hr-stat-label">Exit Velocity</div>
-                                <div class="hr-stat-value">${hr.exit_velocity} mph</div>
-                            </div>
-                        ` : ''}
-                        ${hr.launch_angle ? `
-                            <div class="hr-stat">
-                                <div class="hr-stat-label">Launch Angle</div>
-                                <div class="hr-stat-value">${hr.launch_angle}°</div>
-                            </div>
-                        ` : ''}
-                        ${hr.hit_distance ? `
-                            <div class="hr-stat">
-                                <div class="hr-stat-label">Distance</div>
-                                <div class="hr-stat-value">${hr.hit_distance} ft</div>
-                            </div>
-                        ` : ''}
+                        <div class="hr-stat">
+                            <div class="hr-stat-label">Event</div>
+                            <div class="hr-stat-value">${play.event}</div>
+                        </div>
+                        <div class="hr-stat">
+                            <div class="hr-stat-label">Runs Scored</div>
+                            <div class="hr-stat-value">${play.runs_scored}</div>
+                        </div>
+                        <div class="hr-stat">
+                            <div class="hr-stat-label">RBI</div>
+                            <div class="hr-stat-value">${play.rbi_count}</div>
+                        </div>
                         <div class="hr-stat">
                             <div class="hr-stat-label">Score</div>
-                            <div class="hr-stat-value">${hr.away_score}-${hr.home_score}</div>
+                            <div class="hr-stat-value">${play.away_score}-${play.home_score}</div>
+                        </div>
+                        <div class="hr-stat">
+                            <div class="hr-stat-label">WPA</div>
+                            <div class="hr-stat-value">${(play.wpa * 100).toFixed(1)}%</div>
                         </div>
                     </div>
                     
-                    <div class="hr-timestamp">${new Date(hr.timestamp).toLocaleString()}</div>
+                    <div class="hr-timestamp">${new Date(play.timestamp).toLocaleString()}</div>
                 </div>
             `).join('');
         }

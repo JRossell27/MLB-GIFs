@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 # Import our local components
 from gif_integration import BaseballSavantGIFIntegration
 from telegram_bot import telegram_client
-from mets_hr_tracker import start_mets_hr_tracker, get_mets_hr_tracker
+from mets_hr_tracker import start_mets_scoring_tracker, get_mets_scoring_tracker
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-key-change-in-production')
@@ -676,9 +676,9 @@ class ManualGIFDashboard:
             return 'unknown'
 
     def start_mets_hr_tracking(self):
-        """Start the Mets HR background tracker"""
-        start_mets_hr_tracker()
-        logger.info("✅ Started Mets HR background tracking")
+        """Start the Mets scoring plays background tracker"""
+        start_mets_scoring_tracker()
+        logger.info("✅ Started Mets scoring plays background tracking")
 
 # Global dashboard instance
 dashboard = ManualGIFDashboard()
@@ -1078,9 +1078,9 @@ def api_mets_game():
 
 @app.route('/api/mets_hr_status')
 def api_mets_hr_status():
-    """Get Mets HR tracker status"""
+    """Get Mets scoring plays tracker status"""
     try:
-        tracker = get_mets_hr_tracker()
+        tracker = get_mets_scoring_tracker()
         if tracker:
             status = tracker.get_status()
         else:
@@ -1090,7 +1090,7 @@ def api_mets_hr_status():
                 'last_check': None,
                 'queue_size': 0,
                 'processed_plays': 0,
-                'recent_home_runs': [],
+                'recent_scoring_plays': [],
                 'stats': {}
             }
         
@@ -1100,7 +1100,7 @@ def api_mets_hr_status():
         })
         
     except Exception as e:
-        logger.error(f"Error getting Mets HR status: {e}")
+        logger.error(f"Error getting Mets scoring plays status: {e}")
         return jsonify({
             'success': False,
             'error': str(e)
@@ -1108,28 +1108,28 @@ def api_mets_hr_status():
 
 @app.route('/api/mets_hr_recent')
 def api_mets_hr_recent():
-    """Get recent Mets home runs"""
+    """Get recent Mets scoring plays"""
     try:
         limit = int(request.args.get('limit', 20))
-        tracker = get_mets_hr_tracker()
+        tracker = get_mets_scoring_tracker()
         
         if tracker:
-            recent_hrs = tracker.get_recent_home_runs(limit)
+            recent_plays = tracker.get_recent_scoring_plays(limit)
         else:
-            recent_hrs = []
+            recent_plays = []
         
         return jsonify({
             'success': True,
-            'home_runs': recent_hrs,
-            'count': len(recent_hrs)
+            'scoring_plays': [play.to_dict() for play in recent_plays],
+            'count': len(recent_plays)
         })
         
     except Exception as e:
-        logger.error(f"Error getting recent Mets HRs: {e}")
+        logger.error(f"Error getting recent Mets scoring plays: {e}")
         return jsonify({
             'success': False,
             'error': str(e),
-            'home_runs': [],
+            'scoring_plays': [],
             'count': 0
         }), 500
 

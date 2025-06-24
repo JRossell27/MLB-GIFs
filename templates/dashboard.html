@@ -189,6 +189,11 @@
             color: white;
         }
 
+        .btn-secondary {
+            background: linear-gradient(45deg, #6c757d, #495057);
+            color: white;
+        }
+
         .btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
@@ -847,6 +852,235 @@
                 flex-wrap: wrap;
             }
         }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            border-radius: 15px;
+            padding: 30px;
+            width: 90%;
+            max-width: 1200px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .modal-title {
+            font-size: 1.8em;
+            margin: 0;
+            background: linear-gradient(45deg, #00d4ff, #1e88e5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5em;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-close:hover {
+            opacity: 1;
+        }
+
+        .yesterday-game-card {
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border-left: 4px solid #00d4ff;
+            overflow: hidden;
+        }
+
+        .yesterday-game-header {
+            background: rgba(30, 136, 229, 0.2);
+            padding: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .yesterday-game-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #00d4ff;
+        }
+
+        .yesterday-game-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .yesterday-plays-section {
+            padding: 20px;
+        }
+
+        .yesterday-play {
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 18px;
+            margin-bottom: 15px;
+            border-left: 3px solid #ffc107;
+            transition: all 0.3s ease;
+        }
+
+        .yesterday-play:hover {
+            background: rgba(255,255,255,0.08);
+            transform: translateY(-1px);
+        }
+
+        .yesterday-play-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .yesterday-play-title {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #00d4ff;
+        }
+
+        .impact-badge {
+            background: linear-gradient(45deg, #ffc107, #ff8f00);
+            color: #000;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .yesterday-play-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+        }
+
+        .yesterday-play-detail {
+            background: rgba(255,255,255,0.05);
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+
+        .yesterday-play-description {
+            background: rgba(0, 212, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-style: italic;
+            border-left: 3px solid #00d4ff;
+        }
+
+        .yesterday-play-actions {
+            text-align: center;
+        }
+
+        .create-yesterday-gif-btn {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+        }
+
+        .create-yesterday-gif-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .create-yesterday-gif-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .create-yesterday-gif-btn.success {
+            background: linear-gradient(45deg, #17a2b8, #138496);
+        }
+
+        .modal-loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .modal-loading .loading {
+            width: 24px;
+            height: 24px;
+            border-width: 3px;
+            margin-bottom: 15px;
+        }
+
+        .filter-controls {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-controls label {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .filter-controls input[type="range"] {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .no-plays-message {
+            text-align: center;
+            padding: 40px 20px;
+            opacity: 0.7;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            margin: 20px 0;
+        }
     </style>
 </head>
 <body>
@@ -874,6 +1108,7 @@
             <button class="btn btn-primary" onclick="expandAll()">📂 Expand All</button>
             <button class="btn btn-warning" onclick="collapseAll()">📁 Collapse All</button>
             <button class="btn btn-info" onclick="showNotable()">⭐ Show Notable</button>
+            <button class="btn btn-secondary" onclick="showYesterdayGifModal()">📺 Yesterday's GIFs</button>
             <a href="/mets_hrs" class="btn btn-mets">🏠 Mets Scoring</a>
             <a href="/mets" class="btn btn-mets">⚾ Mets Pitch-by-Pitch</a>
         </div>
@@ -1648,6 +1883,265 @@
                 setTimeout(() => toast.remove(), 300);
             }, 4000);
         }
+
+        // Yesterday's GIFs Modal Functions
+        function showYesterdayGifModal() {
+            const modal = document.getElementById('yesterdayGifModal');
+            const modalContent = document.getElementById('yesterdayModalContent');
+            
+            // Show modal
+            modal.classList.add('show');
+            
+            // Show loading state
+            modalContent.innerHTML = `
+                <div class="modal-loading">
+                    <div class="loading"></div>
+                    <p>Loading yesterday's games and high-impact plays...</p>
+                </div>
+            `;
+            
+            // Fetch yesterday's games
+            fetch('/api/yesterday_games?min_impact_score=0.15')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayYesterdayGames(data.games, data.total_plays);
+                    } else {
+                        modalContent.innerHTML = `
+                            <div class="modal-header">
+                                <h2 class="modal-title">Yesterday's High-Impact Plays</h2>
+                                <button class="modal-close" onclick="closeYesterdayGifModal()">&times;</button>
+                            </div>
+                            <div class="no-plays-message">
+                                <h3>❌ Error Loading Games</h3>
+                                <p>${data.error}</p>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching yesterday games:', error);
+                    modalContent.innerHTML = `
+                        <div class="modal-header">
+                            <h2 class="modal-title">Yesterday's High-Impact Plays</h2>
+                            <button class="modal-close" onclick="closeYesterdayGifModal()">&times;</button>
+                        </div>
+                        <div class="no-plays-message">
+                            <h3>❌ Network Error</h3>
+                            <p>Could not load yesterday's games. Please try again.</p>
+                        </div>
+                    `;
+                });
+        }
+        
+        function closeYesterdayGifModal() {
+            const modal = document.getElementById('yesterdayGifModal');
+            modal.classList.remove('show');
+        }
+        
+        function displayYesterdayGames(games, totalPlays) {
+            const modalContent = document.getElementById('yesterdayModalContent');
+            
+            if (!games || games.length === 0) {
+                modalContent.innerHTML = `
+                    <div class="modal-header">
+                        <h2 class="modal-title">Yesterday's High-Impact Plays</h2>
+                        <button class="modal-close" onclick="closeYesterdayGifModal()">&times;</button>
+                    </div>
+                    <div class="no-plays-message">
+                        <h3>📭 No Games Found</h3>
+                        <p>No completed games with qualifying plays found for yesterday.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = `
+                <div class="modal-header">
+                    <h2 class="modal-title">Yesterday's High-Impact Plays</h2>
+                    <button class="modal-close" onclick="closeYesterdayGifModal()">&times;</button>
+                </div>
+                
+                <div class="filter-controls">
+                    <label for="impactSlider">Minimum Impact Score: <span id="impactValue">0.15</span></label>
+                    <input type="range" id="impactSlider" min="0.1" max="0.5" step="0.05" value="0.15" 
+                           onchange="filterPlaysByImpact(this.value)">
+                    <small>Higher values show only the most impactful plays</small>
+                </div>
+                
+                <div class="games-summary">
+                    <p><strong>${games.length}</strong> completed games with <strong>${totalPlays}</strong> qualifying plays</p>
+                </div>
+                
+                <div id="yesterdayGamesContainer">
+            `;
+            
+            games.forEach(game => {
+                const totalScore = game.home_score + game.away_score;
+                const gameTitle = `${game.away_team} @ ${game.home_team}`;
+                const finalScore = `Final: ${game.away_score}-${game.home_score}`;
+                
+                html += `
+                    <div class="yesterday-game-card">
+                        <div class="yesterday-game-header">
+                            <div class="yesterday-game-title">${gameTitle}</div>
+                            <div class="yesterday-game-details">
+                                <div><strong>Score:</strong> ${finalScore}</div>
+                                <div><strong>Venue:</strong> ${game.venue}</div>
+                                <div><strong>Date:</strong> ${game.game_date}</div>
+                                <div><strong>Plays:</strong> ${game.plays.length} qualifying</div>
+                            </div>
+                        </div>
+                        
+                        <div class="yesterday-plays-section">
+                `;
+                
+                if (game.plays.length === 0) {
+                    html += `
+                        <div class="no-plays-message">
+                            <p>No qualifying plays found for this game</p>
+                        </div>
+                    `;
+                } else {
+                    game.plays.forEach(play => {
+                        const impactPercent = (play.impact_score * 100).toFixed(1);
+                        const leverageStr = play.leverage_index ? play.leverage_index.toFixed(2) : 'N/A';
+                        const wpaStr = play.wpa ? (play.wpa >= 0 ? '+' : '') + play.wpa.toFixed(3) : 'N/A';
+                        
+                        html += `
+                            <div class="yesterday-play" data-impact="${play.impact_score}">
+                                <div class="yesterday-play-header">
+                                    <div class="yesterday-play-title">${play.event}</div>
+                                    <div class="impact-badge">${impactPercent}% Impact</div>
+                                </div>
+                                
+                                <div class="yesterday-play-description">
+                                    ${play.description}
+                                </div>
+                                
+                                <div class="yesterday-play-details">
+                                    <div class="yesterday-play-detail">
+                                        <strong>Batter:</strong> ${play.batter}
+                                    </div>
+                                    <div class="yesterday-play-detail">
+                                        <strong>Pitcher:</strong> ${play.pitcher}
+                                    </div>
+                                    <div class="yesterday-play-detail">
+                                        <strong>Inning:</strong> ${play.inning} ${play.half_inning}
+                                    </div>
+                                    <div class="yesterday-play-detail">
+                                        <strong>Score:</strong> ${play.away_score}-${play.home_score}
+                                    </div>
+                                    <div class="yesterday-play-detail">
+                                        <strong>Leverage:</strong> ${leverageStr}
+                                    </div>
+                                    <div class="yesterday-play-detail">
+                                        <strong>WPA:</strong> ${wpaStr}
+                                    </div>
+                                </div>
+                                
+                                <div class="yesterday-play-actions">
+                                    <button class="create-yesterday-gif-btn" 
+                                            data-play-id="${play.play_id}"
+                                            data-event="${play.event}"
+                                            data-batter="${play.batter}"
+                                            onclick="createYesterdayPlayGif(this)">
+                                        🎬 Create GIF
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                </div>
+            `;
+            
+            modalContent.innerHTML = html;
+        }
+        
+        function filterPlaysByImpact(minImpact) {
+            document.getElementById('impactValue').textContent = minImpact;
+            
+            const plays = document.querySelectorAll('.yesterday-play');
+            plays.forEach(play => {
+                const playImpact = parseFloat(play.getAttribute('data-impact'));
+                if (playImpact >= parseFloat(minImpact)) {
+                    play.style.display = 'block';
+                } else {
+                    play.style.display = 'none';
+                }
+            });
+            
+            // Update counts
+            const visiblePlays = document.querySelectorAll('.yesterday-play[style*="block"], .yesterday-play:not([style*="none"])');
+            console.log(`Showing ${visiblePlays.length} plays with impact >= ${minImpact}`);
+        }
+        
+        function createYesterdayPlayGif(button) {
+            const playId = button.getAttribute('data-play-id');
+            const event = button.getAttribute('data-event');
+            const batter = button.getAttribute('data-batter');
+            
+            // Update button state
+            button.disabled = true;
+            const originalText = button.innerHTML;
+            button.innerHTML = '⏳ Creating GIF...';
+            
+            // Create the GIF
+            fetch('/api/create_gif', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    play_id: playId,
+                    output_format: 'gif',
+                    broadcast_preference: 'auto'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    button.innerHTML = '✅ GIF Created & Sent';
+                    button.classList.add('success');
+                    showToast(`GIF created for ${event} by ${batter}!`, 'success');
+                } else {
+                    button.disabled = false;
+                    button.innerHTML = originalText;
+                    showToast(`Error creating GIF: ${data.error}`, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                button.disabled = false;
+                button.innerHTML = originalText;
+                showToast('Network error creating GIF', 'error');
+            });
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('yesterdayGifModal');
+            if (event.target === modal) {
+                closeYesterdayGifModal();
+            }
+        }
     </script>
+
+    <!-- Yesterday's GIFs Modal -->
+    <div id="yesterdayGifModal" class="modal">
+        <div class="modal-content" id="yesterdayModalContent">
+            <!-- Content will be loaded dynamically -->
+        </div>
+    </div>
+
 </body>
 </html> 

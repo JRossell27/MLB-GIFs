@@ -167,15 +167,34 @@ class ManualGIFDashboard:
             today = test_date
             logger.info(f"Using test date from environment: {today}")
         
+        return self._get_games_for_date(today)
+
+    def get_yesterday_games(self) -> List[Dict]:
+        """Get all games for yesterday (Eastern time)"""
+        eastern = pytz.timezone('US/Eastern')
+        yesterday = (datetime.now(eastern) - timedelta(days=1)).strftime('%Y-%m-%d')
+        
+        # Check if we should use a test date from environment variable
+        test_date = os.environ.get('TEST_DATE')
+        if test_date:
+            # Use the day before the test date
+            test_date_obj = datetime.strptime(test_date, '%Y-%m-%d')
+            yesterday = (test_date_obj - timedelta(days=1)).strftime('%Y-%m-%d')
+            logger.info(f"Using yesterday test date: {yesterday}")
+        
+        return self._get_games_for_date(yesterday)
+
+    def _get_games_for_date(self, date_str: str) -> List[Dict]:
+        """Get all games for a specific date"""
         try:
             url = f"{self.schedule_api_base}/schedule"
             params = {
                 'sportId': 1,
-                'date': today,
+                'date': date_str,
                 'hydrate': 'game(content(editorial(recap))),linescore,team,probablePitcher'
             }
             
-            logger.info(f"Fetching games for date: {today}")
+            logger.info(f"Fetching games for date: {date_str}")
             logger.info(f"API URL: {url}")
             logger.info(f"API params: {params}")
             
@@ -193,11 +212,11 @@ class ManualGIFDashboard:
                     games.append(game)
                     logger.info(f"Found game: {game.get('teams', {}).get('away', {}).get('team', {}).get('abbreviation', 'Unknown')} @ {game.get('teams', {}).get('home', {}).get('team', {}).get('abbreviation', 'Unknown')} - Status: {game.get('status', {}).get('detailedState', 'Unknown')}")
             
-            logger.info(f"Found {len(games)} games for {today}")
+            logger.info(f"Found {len(games)} games for {date_str}")
             return games
             
         except Exception as e:
-            logger.error(f"Error fetching today's games: {e}")
+            logger.error(f"Error fetching games for {date_str}: {e}")
             return []
     
     def get_game_plays(self, game_id: int) -> List[Dict]:
@@ -685,6 +704,114 @@ class ManualGIFDashboard:
         start_mets_scoring_tracker()
         logger.info("✅ Started Mets scoring plays background tracking")
 
+    def get_yesterday_games_with_plays(self, min_impact_score: float = 0.15) -> Dict:
+        """Get yesterday's games with their high-impact plays for manual selection"""
+        try:
+            logger.info(f"Getting yesterday's games with plays (min impact: {min_impact_score})")
+            
+            # Get yesterday's games
+            yesterday_games = self.get_yesterday_games()
+            
+            if not yesterday_games:
+                return {
+                    "success": False,
+                    "error": "No games found for yesterday",
+                    "games": []
+                }
+            
+            logger.info(f"Found {len(yesterday_games)} games from yesterday")
+            
+            games_with_plays = []
+            
+            for game_data in yesterday_games:
+                game_id = game_data['gamePk']
+                status_code = game_data.get('status', {}).get('statusCode')
+                
+                # Only process completed games
+                if status_code != 'F':  # F = Final
+                    logger.info(f"Skipping game {game_id} - not final (status: {status_code})")
+                    continue
+                
+                try:
+                    game_info = {
+                        "game_id": game_id,
+                        "home_team": game_data['teams']['home']['team']['abbreviation'],
+                        "away_team": game_data['teams']['away']['team']['abbreviation'],
+                        "home_score": game_data.get('linescore', {}).get('teams', {}).get('home', {}).get('runs', 0),
+                        "away_score": game_data.get('linescore', {}).get('teams', {}).get('away', {}).get('runs', 0),
+                        "venue": game_data.get('venue', {}).get('name', ''),
+                        "game_date": game_data['gameDate'][:10],
+                        "plays": []
+                    }
+                    
+                    logger.info(f"Processing game {game_id}: {game_info['away_team']} @ {game_info['home_team']}")
+                    
+                    # Get plays for this game
+                    plays_data = self.get_game_plays(game_id)
+                    
+                    if not plays_data:
+                        logger.warning(f"No plays data found for game {game_id}")
+                        # Still include the game even if no plays
+                        games_with_plays.append(game_info)
+                        continue
+                    
+                    # Filter plays by impact score and event types
+                    for play_data in plays_data:
+                        # Create a temporary GamePlay object to calculate impact
+                        temp_play = self._create_game_play(play_data, game_data)
+                        if not temp_play:
+                            continue
+                        
+                        # Check if play meets minimum criteria
+                        if temp_play.impact_score >= min_impact_score:
+                            play_info = {
+                                "play_id": temp_play.play_id,
+                                "event": temp_play.event,
+                                "description": temp_play.description,
+                                "batter": temp_play.batter,
+                                "pitcher": temp_play.pitcher,
+                                "inning": temp_play.inning,
+                                "half_inning": temp_play.half_inning,
+                                "home_score": temp_play.home_score,
+                                "away_score": temp_play.away_score,
+                                "impact_score": temp_play.impact_score,
+                                "leverage_index": temp_play.leverage_index,
+                                "wpa": temp_play.wpa,
+                                "timestamp": temp_play.timestamp.isoformat()
+                            }
+                            game_info["plays"].append(play_info)
+                    
+                    # Sort plays by impact score (highest first)
+                    game_info["plays"].sort(key=lambda x: x["impact_score"], reverse=True)
+                    
+                    logger.info(f"Found {len(game_info['plays'])} qualifying plays for game {game_id}")
+                    games_with_plays.append(game_info)
+                    
+                except Exception as e:
+                    logger.error(f"Error processing game {game_id}: {e}")
+                    continue
+            
+            # Sort games by total plays (most plays first)
+            games_with_plays.sort(key=lambda x: len(x["plays"]), reverse=True)
+            
+            total_plays = sum(len(game["plays"]) for game in games_with_plays)
+            logger.info(f"Found {len(games_with_plays)} games with {total_plays} total qualifying plays")
+            
+            return {
+                "success": True,
+                "games": games_with_plays,
+                "total_games": len(games_with_plays),
+                "total_plays": total_plays
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting yesterday's games with plays: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "games": []
+            }
+
 # Global dashboard instance
 dashboard = ManualGIFDashboard()
 
@@ -1144,6 +1271,97 @@ def api_mets_hr_recent():
             'error': str(e),
             'scoring_plays': [],
             'count': 0
+        }), 500
+
+@app.route('/api/create_yesterday_gifs', methods=['POST'])
+def api_create_yesterday_gifs():
+    """Create GIFs for high-impact plays from all of yesterday's games"""
+    try:
+        data = request.get_json() or {}
+        
+        # Get parameters with defaults
+        min_impact_score = data.get('min_impact_score', 0.2)
+        max_gifs_per_game = data.get('max_gifs_per_game', 5)
+        output_format = data.get('output_format', 'gif')
+        include_events = data.get('include_events', ['home run', 'triple', 'double', 'strikeout'])
+        
+        # Validate parameters
+        if not isinstance(min_impact_score, (int, float)) or min_impact_score < 0 or min_impact_score > 1:
+            return jsonify({
+                "success": False, 
+                "error": "min_impact_score must be a number between 0 and 1"
+            }), 400
+        
+        if not isinstance(max_gifs_per_game, int) or max_gifs_per_game < 1 or max_gifs_per_game > 20:
+            return jsonify({
+                "success": False, 
+                "error": "max_gifs_per_game must be an integer between 1 and 20"
+            }), 400
+        
+        if output_format not in ['gif', 'mp4']:
+            return jsonify({
+                "success": False, 
+                "error": "output_format must be 'gif' or 'mp4'"
+            }), 400
+        
+        if not isinstance(include_events, list):
+            return jsonify({
+                "success": False, 
+                "error": "include_events must be a list of event types"
+            }), 400
+        
+        logger.info(f"Starting bulk GIF creation with params: impact={min_impact_score}, max_per_game={max_gifs_per_game}, format={output_format}")
+        
+        # Run the bulk creation (this will take a while)
+        result = dashboard.create_gifs_for_yesterday_games(
+            min_impact_score=min_impact_score,
+            max_gifs_per_game=max_gifs_per_game,
+            output_format=output_format,
+            include_events=include_events
+        )
+        
+        if result["success"]:
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+            
+    except Exception as e:
+        logger.error(f"Error in bulk GIF creation API: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "summary": {"games_processed": 0, "gifs_created": 0, "gifs_failed": 0}
+        }), 500
+
+@app.route('/api/yesterday_games')
+def api_yesterday_games():
+    """Get yesterday's games with their high-impact plays for manual selection"""
+    try:
+        # Get optional minimum impact score from query parameters
+        min_impact_score = float(request.args.get('min_impact_score', 0.15))
+        
+        # Validate parameter
+        if min_impact_score < 0 or min_impact_score > 1:
+            return jsonify({
+                "success": False, 
+                "error": "min_impact_score must be between 0 and 1"
+            }), 400
+        
+        logger.info(f"Getting yesterday's games with min impact score: {min_impact_score}")
+        
+        result = dashboard.get_yesterday_games_with_plays(min_impact_score=min_impact_score)
+        
+        if result["success"]:
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+            
+    except Exception as e:
+        logger.error(f"Error in yesterday games API: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "games": []
         }), 500
 
 @app.route('/mets_hrs')

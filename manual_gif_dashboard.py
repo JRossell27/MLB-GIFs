@@ -468,8 +468,8 @@ class ManualGIFDashboard:
             del self.games[game_id]
             logger.info(f"Removed old game {game_id}")
     
-    def create_gif_for_play(self, play_id: str) -> Dict:
-        """Create a REAL VIDEO GIF for the specified play and send to Telegram"""
+    def create_gif_for_play(self, play_id: str, broadcast_preference: str = 'auto', output_format: str = 'gif') -> Dict:
+        """Create a REAL VIDEO GIF/MP4 for the specified play and send to Telegram"""
         try:
             # Find the play
             play = None
@@ -490,10 +490,12 @@ class ManualGIFDashboard:
             # Mark as processing
             play.gif_processing = True
             
-            logger.info(f"Creating VIDEO GIF for {play.event} by {play.batter} in game {play.game_id}")
+            format_name = "VIDEO" if output_format == 'mp4' else "GIF"
+            logger.info(f"Creating {format_name} for {play.event} by {play.batter} in game {play.game_id}")
+            logger.info(f"Broadcast preference: {broadcast_preference}")
             
-            # Create GIF using existing integration - ONLY REAL VIDEO, NO FALLBACKS
-            gif_path = self.gif_integration.create_gif_for_play(
+            # Create GIF/MP4 using existing integration with new options
+            output_path = self.gif_integration.create_gif_for_play(
                 game_id=play.game_id,
                 play_id=int(play.play_id.split('_')[1]),
                 game_date=play.game_date,
@@ -501,11 +503,13 @@ class ManualGIFDashboard:
                     'result': {'event': play.event},
                     'about': {'inning': play.inning},
                     'matchup': {'batter': {'fullName': play.batter}}
-                }
+                },
+                broadcast_preference=broadcast_preference,
+                output_format=output_format
             )
             
-            if gif_path and os.path.exists(gif_path):
-                logger.info(f"Successfully created VIDEO GIF: {gif_path}")
+            if output_path and os.path.exists(output_path):
+                logger.info(f"Successfully created {format_name}: {output_path}")
                 
                 # Send to Telegram
                 telegram_data = {
@@ -520,38 +524,39 @@ class ManualGIFDashboard:
                     'pitcher': play.pitcher,
                     'away_score': play.away_score,
                     'home_score': play.home_score,
-                    'timestamp': play.timestamp.isoformat()
+                    'timestamp': play.timestamp.isoformat(),
+                    'broadcast_preference': broadcast_preference,
+                    'output_format': output_format
                 }
                 
-                success = telegram_client.send_gif_notification(telegram_data, gif_path)
+                success = telegram_client.send_gif_notification(telegram_data, output_path)
                 
-                # Clean up GIF file immediately
+                # Clean up file immediately
                 try:
-                    os.remove(gif_path)
-                    logger.info(f"Cleaned up GIF file: {gif_path}")
+                    os.remove(output_path)
+                    logger.info(f"Cleaned up {format_name} file: {output_path}")
                 except:
                     pass
                 
                 if success:
                     play.gif_created = True
                     play.gif_processing = False
-                    logger.info(f"✅ VIDEO GIF sent to Telegram successfully for {play.event}")
-                    return {"success": True, "message": "VIDEO GIF created and sent to Telegram"}
+                    logger.info(f"✅ {format_name} sent to Telegram successfully for {play.event}")
+                    return {"success": True, "message": f"{format_name} created and sent to Telegram", "format": output_format}
                 else:
                     play.gif_processing = False
-                    logger.error(f"❌ Failed to send VIDEO GIF to Telegram")
-                    return {"success": False, "error": "Failed to send VIDEO GIF to Telegram"}
+                    logger.error(f"❌ Failed to send {format_name} to Telegram")
+                    return {"success": False, "error": f"Failed to send {format_name} to Telegram"}
             else:
                 play.gif_processing = False
-                logger.warning(f"⚠️ No Baseball Savant video available for {play.event} by {play.batter}")
-                return {"success": False, "error": "No Baseball Savant video available for this play. Individual play videos are not available from Baseball Savant for this game or this specific play."}
+                logger.warning(f"⚠️ No video available for this play")
+                return {"success": False, "error": "No video available for this play"}
                 
         except Exception as e:
-            logger.error(f"Error creating VIDEO GIF for play {play_id}: {e}")
-            # Make sure to reset processing state
-            if 'play' in locals() and play:
+            logger.error(f"Error creating {format_name}: {e}")
+            if 'play' in locals():
                 play.gif_processing = False
-            return {"success": False, "error": f"Error creating VIDEO GIF: {str(e)}"}
+            return {"success": False, "error": str(e)}
 
     def get_game_highlights(self, game_id: int) -> List[Dict]:
         """Get available highlights for a game"""
@@ -768,14 +773,22 @@ def api_games():
 
 @app.route('/api/create_gif', methods=['POST'])
 def api_create_gif():
-    """Create a GIF for a specific play"""
+    """Create a GIF/MP4 for a specific play"""
     data = request.get_json()
     play_id = data.get('play_id')
+    broadcast_preference = data.get('broadcast_preference', 'auto')  # auto, home, away, mets
+    output_format = data.get('output_format', 'gif')  # gif or mp4
     
     if not play_id:
         return jsonify({"success": False, "error": "play_id required"}), 400
     
-    result = dashboard.create_gif_for_play(play_id)
+    if broadcast_preference not in ['auto', 'home', 'away', 'mets']:
+        return jsonify({"success": False, "error": "broadcast_preference must be 'auto', 'home', 'away', or 'mets'"}), 400
+    
+    if output_format not in ['gif', 'mp4']:
+        return jsonify({"success": False, "error": "output_format must be 'gif' or 'mp4'"}), 400
+    
+    result = dashboard.create_gif_for_play(play_id, broadcast_preference, output_format)
     
     if result["success"]:
         return jsonify(result)

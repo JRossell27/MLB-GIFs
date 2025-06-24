@@ -7,17 +7,18 @@ Optimized for 512MB RAM - creates, sends, and deletes GIFs immediately
 """
 
 import os
+import sys
 import time
-import requests
+import json
 import logging
-from datetime import datetime, timedelta
-from typing import Optional, Dict, Any, List
 import subprocess
 import tempfile
 from pathlib import Path
-import sys
-import re
-import json
+from datetime import datetime, timedelta
+from typing import List, Dict, Optional, Set
+import pytz
+from dataclasses import dataclass, asdict
+import requests
 
 # Import statsapi
 try:
@@ -40,7 +41,7 @@ class MLBHighlightGIFIntegration:
         self.temp_dir.mkdir(exist_ok=True)
         self.savant_base = "https://baseballsavant.mlb.com"
     
-    def get_baseball_savant_play_video(self, game_id: int, play_id: int, mlb_play_data: Dict = None) -> Optional[str]:
+    def get_baseball_savant_play_video(self, game_id: int, play_id: int, mlb_play_data: Dict = None, broadcast_preference: str = 'auto') -> Optional[str]:
         """Get video URL for a specific play from Baseball Savant using the correct fastball-clips pattern"""
         try:
             # Get all plays from Baseball Savant
@@ -71,78 +72,137 @@ class MLBHighlightGIFIntegration:
             
             logger.info(f"Found {len(all_plays)} plays from Baseball Savant")
             
-            if not all_plays:
+            # Determine broadcast preference based on teams
+            selected_broadcast = self._determine_broadcast_preference(
+                data, broadcast_preference, mlb_play_data
+            )
+            
+            # Find the specific play and apply broadcast preference
+            target_play = None
+            target_source = None
+            
+            if mlb_play_data:
+                # Try to match by event and inning
+                event = mlb_play_data.get('result', {}).get('event', '')
+                inning = mlb_play_data.get('about', {}).get('inning', 0)
+                batter = mlb_play_data.get('matchup', {}).get('batter', {}).get('fullName', '')
+                
+                logger.info(f"Looking for play: {event} - {batter} (Inning {inning})")
+                
+                # First try to find exact match with preferred broadcast
+                for play, source in all_plays:
+                    if (selected_broadcast == 'auto' or 
+                        (selected_broadcast == 'home' and source == 'home') or
+                        (selected_broadcast == 'away' and source == 'away')):
+                        
+                        if (play.get('play_id') == play_id or 
+                            (event.lower() in str(play.get('events', '')).lower() and
+                             play.get('inning') == inning)):
+                            target_play = play
+                            target_source = source
+                            logger.info(f"Found matching play with {source} broadcast preference")
+                            break
+                
+                # Fallback to any available broadcast if preferred not found
+                if not target_play:
+                    for play, source in all_plays:
+                        if (play.get('play_id') == play_id or 
+                            (event.lower() in str(play.get('events', '')).lower() and
+                             play.get('inning') == inning)):
+                            target_play = play
+                            target_source = source
+                            logger.info(f"Using fallback {source} broadcast")
+                            break
+            
+            # Ultimate fallback - use first available play
+            if not target_play and all_plays:
+                target_play, target_source = all_plays[0]
+                logger.info("Using first available play as fallback")
+            
+            if not target_play:
                 logger.warning("No plays found in Baseball Savant data")
                 return None
             
-            # Find matching play using sophisticated matching
-            target_play = None
-            target_team_path = None
-            
-            if mlb_play_data:
-                # Try to match using MLB play data
-                target_batter = mlb_play_data.get('batter_name', '').strip()
-                target_event = mlb_play_data.get('event', '').strip()
-                target_inning = mlb_play_data.get('inning')
-                
-                logger.info(f"Looking for play: {target_batter} - {target_event} (Inning {target_inning})")
-                
-                for play, team_path in all_plays:
-                    play_batter = play.get('batter_name', '').strip()
-                    play_event = play.get('events', '').strip()
-                    play_inning = play.get('inning')
+            # Extract video URL from the selected play
+            video_url = target_play.get('video_url')
+            if not video_url:
+                # Try to construct URL from play UUID if direct URL not available
+                play_uuid = target_play.get('play_id')
+                if play_uuid:
+                    # Construct the correct video URL using fastball-clips pattern
+                    video_urls = [
+                        f"https://fastball-clips.mlb.com/{game_id}/{target_source}/{play_uuid}.m3u8",
+                        f"https://fastball-clips.mlb.com/{game_id}/{target_source}/{play_uuid}.mp4"
+                    ]
                     
-                    # Match by batter name and inning
-                    if (play_batter == target_batter and 
-                        play_inning == target_inning and
-                        (not target_event or play_event == target_event)):
-                        target_play = play
-                        target_team_path = team_path
-                        logger.info(f"✅ Found matching play: {play_batter} - {play_event}")
-                        break
-            
-            # If no MLB data match, try to find by play_id or use first play
-            if not target_play and all_plays:
-                target_play, target_team_path = all_plays[0]  # Use first play as fallback
-                logger.info(f"Using first available play as fallback")
-            
-            if not target_play:
-                logger.warning("No suitable play found for video")
-                return None
-            
-            # Extract play UUID
-            play_uuid = target_play.get('play_id')
-            if not play_uuid:
-                logger.warning("No play UUID found")
-                return None
-            
-            # Construct the correct video URL using fastball-clips pattern
-            # Try HLS first (more reliable), then MP4
-            video_urls = [
-                f"https://fastball-clips.mlb.com/{game_id}/{target_team_path}/{play_uuid}.m3u8",
-                f"https://fastball-clips.mlb.com/{game_id}/{target_team_path}/{play_uuid}.mp4"
-            ]
-            
-            for video_url in video_urls:
+                    for test_url in video_urls:
+                        logger.info(f"Testing video URL: {test_url}")
+                        try:
+                            test_response = requests.head(test_url, headers=headers, timeout=10)
+                            if test_response.status_code == 200:
+                                video_url = test_url
+                                logger.info(f"✅ Found working Baseball Savant video: {video_url}")
+                                break
+                        except Exception as e:
+                            logger.info(f"Video URL test failed: {e}")
+                            continue
+            else:
                 logger.info(f"Testing video URL: {video_url}")
-                try:
-                    # Test if video URL is accessible
-                    video_response = requests.head(video_url, headers=headers, timeout=10)
-                    if video_response.status_code == 200:
-                        logger.info(f"✅ Found working Baseball Savant video: {video_url}")
-                        return video_url
-                    else:
-                        logger.info(f"Video URL returned {video_response.status_code}")
-                except Exception as e:
-                    logger.info(f"Video URL test failed: {e}")
-                    continue
+                # Test if URL is accessible
+                test_response = requests.head(video_url, headers=headers, timeout=10)
+                if test_response.status_code == 200:
+                    logger.info(f"✅ Found working Baseball Savant video: {video_url}")
+                else:
+                    logger.warning(f"Video URL not accessible: {test_response.status_code}")
+                    video_url = None
             
-            logger.warning(f"No working video URLs found for play UUID {play_uuid}")
-            return None
+            if not video_url:
+                logger.warning("No valid video URL found in Baseball Savant data")
+                return None
+            
+            return video_url
             
         except Exception as e:
-            logger.error(f"Error getting Baseball Savant video: {e}")
+            logger.error(f"Error getting Baseball Savant play video: {e}")
             return None
+    
+    def _determine_broadcast_preference(self, game_data: Dict, preference: str, mlb_play_data: Dict = None) -> str:
+        """Determine which broadcast to prefer based on preference and game context"""
+        if preference in ['home', 'away']:
+            return preference
+        
+        # Auto selection logic
+        if preference == 'mets':
+            # Always prefer Mets broadcast if available
+            home_team = game_data.get('home_team_name', '').upper()
+            away_team = game_data.get('away_team_name', '').upper()
+            
+            if 'NYM' in home_team or 'METS' in home_team:
+                logger.info("Mets are home team - using home broadcast")
+                return 'home'
+            elif 'NYM' in away_team or 'METS' in away_team:
+                logger.info("Mets are away team - using away broadcast")  
+                return 'away'
+        
+        if preference == 'auto':
+            # Smart selection: prefer Mets if they're playing, otherwise home team
+            home_team = game_data.get('home_team_name', '').upper()
+            away_team = game_data.get('away_team_name', '').upper()
+            
+            # Check if Mets are involved
+            if 'NYM' in home_team or 'METS' in home_team:
+                logger.info("Auto-selecting Mets home broadcast")
+                return 'home'
+            elif 'NYM' in away_team or 'METS' in away_team:
+                logger.info("Auto-selecting Mets away broadcast")
+                return 'away'
+            else:
+                # Default to home team broadcast for other games
+                logger.info("Auto-selecting home team broadcast")
+                return 'home'
+        
+        # Default fallback
+        return 'home'
 
     def get_game_highlights(self, game_id: int) -> List[Dict]:
         """Get all highlight videos for a game using MLB-StatsAPI (fallback method)"""
@@ -541,40 +601,187 @@ class MLBHighlightGIFIntegration:
             except Exception as cleanup_error:
                 logger.warning(f"Error cleaning up temp files: {cleanup_error}")
     
-    def create_gif_for_play(self, game_id: int, play_id: int, game_date: str, mlb_play_data: Dict = None) -> Optional[str]:
-        """Create a GIF for a specific play using Baseball Savant individual play videos ONLY"""
+    def download_and_convert_to_video(self, video_url: str, output_path: str, max_duration: int = 30) -> bool:
+        """Download video and convert to MP4 format (with sound) using ffmpeg"""
         try:
-            logger.info(f"Creating GIF for play - game {game_id}, play {play_id}")
+            logger.info(f"Downloading video from: {video_url}")
+            
+            # Determine if this is an HLS stream or direct video
+            is_hls = video_url.endswith('.m3u8')
+            
+            if is_hls:
+                # For HLS streams, use ffmpeg to download and convert directly
+                logger.info("Processing HLS stream directly with ffmpeg...")
+                
+                # Quick test to see if HLS stream is accessible
+                try:
+                    test_response = requests.head(video_url, headers={
+                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                        'Referer': 'https://www.mlb.com/',
+                        'Accept': 'video/mp4,video/*;q=0.9,*/*;q=0.8',
+                        'Accept-Language': 'en-US,en;q=0.5',
+                        'Connection': 'keep-alive',
+                    }, timeout=10)
+                    logger.info(f"HLS stream test: {test_response.status_code}")
+                except Exception as e:
+                    logger.warning(f"HLS stream test failed: {e}")
+                
+                # Build ffmpeg command for HLS input - HIGH QUALITY VIDEO WITH AUDIO
+                video_cmd = [
+                    'ffmpeg',
+                    '-user_agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                    '-referer', 'https://www.mlb.com/',
+                    '-headers', 'Accept: video/mp4,video/*;q=0.9,*/*;q=0.8\\r\\nAccept-Language: en-US,en;q=0.5\\r\\nConnection: keep-alive\\r\\n',
+                    '-i', video_url,
+                    '-t', str(max_duration),  # Limit duration
+                    '-c:v', 'libx264',  # High quality video codec
+                    '-c:a', 'aac',      # High quality audio codec
+                    '-preset', 'fast',  # Fast encoding
+                    '-crf', '18',       # High quality (lower is better, 18 is visually lossless)
+                    '-movflags', '+faststart',  # Optimize for streaming
+                    '-y',
+                    output_path
+                ]
+                
+                logger.info(f"Creating high-quality MP4 with audio (max {max_duration}s)")
+                
+                # Run ffmpeg with HLS input
+                result = subprocess.run(
+                    video_cmd, 
+                    check=True, 
+                    capture_output=True, 
+                    text=True,
+                    timeout=300  # 5 minute timeout
+                )
+                
+                logger.info("High-quality MP4 conversion completed successfully")
+                
+            else:
+                # For direct video files, download first then convert if needed
+                temp_video = self.temp_dir / f"temp_video_{int(time.time())}.mp4"
+                
+                # Use proper headers for download
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                    'Referer': 'https://www.mlb.com/',
+                    'Accept': 'video/mp4,video/*;q=0.9,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.5',
+                    'Connection': 'keep-alive',
+                }
+                
+                response = requests.get(video_url, stream=True, timeout=30, headers=headers)
+                response.raise_for_status()
+                
+                with open(temp_video, 'wb') as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        f.write(chunk)
+                
+                logger.info(f"Downloaded video to: {temp_video}")
+                
+                # Check if conversion is needed or if we can use directly
+                if temp_video.suffix.lower() == '.mp4' and max_duration >= 60:
+                    # If it's already MP4 and we don't need to trim, just copy
+                    import shutil
+                    shutil.copy2(temp_video, output_path)
+                    logger.info("Using downloaded MP4 directly (no conversion needed)")
+                    temp_video.unlink()  # Clean up temp file
+                else:
+                    # Convert to ensure quality and duration limits
+                    video_cmd = [
+                        'ffmpeg',
+                        '-i', str(temp_video),
+                        '-t', str(max_duration),
+                        '-c:v', 'libx264',
+                        '-c:a', 'aac',
+                        '-preset', 'fast',
+                        '-crf', '18',
+                        '-movflags', '+faststart',
+                        '-y',
+                        output_path
+                    ]
+                    
+                    result = subprocess.run(
+                        video_cmd, 
+                        check=True, 
+                        capture_output=True, 
+                        text=True,
+                        timeout=180
+                    )
+                    
+                    logger.info("MP4 conversion completed successfully")
+                    temp_video.unlink()  # Clean up temp file
+            
+            # Check if output file was created
+            if not Path(output_path).exists():
+                logger.error("Output MP4 file was not created")
+                return False
+            
+            # Check file size
+            file_size = Path(output_path).stat().st_size
+            file_size_mb = file_size / 1024 / 1024
+            
+            logger.info(f"✅ Successfully created MP4: {output_path} ({file_size_mb:.1f}MB)")
+            return True
+            
+        except subprocess.TimeoutExpired:
+            logger.error("FFmpeg video conversion timed out")
+            return False
+        except subprocess.CalledProcessError as e:
+            logger.error(f"FFmpeg video error: {e}")
+            logger.error(f"FFmpeg stderr: {e.stderr}")
+            logger.error(f"FFmpeg stdout: {e.stdout}")
+            return False
+        except Exception as e:
+            logger.error(f"Error creating MP4: {e}")
+            return False
+    
+    def create_gif_for_play(self, game_id: int, play_id: int, game_date: str, mlb_play_data: Dict = None, 
+                           broadcast_preference: str = 'auto', output_format: str = 'gif') -> Optional[str]:
+        """Create a GIF/video for a specific play using Baseball Savant individual play videos ONLY
+        
+        Args:
+            broadcast_preference: 'auto' (smart selection), 'home', 'away', or 'mets'
+            output_format: 'gif' or 'mp4' for video output
+        """
+        try:
+            logger.info(f"Creating {output_format.upper()} for play - game {game_id}, play {play_id}")
             
             # ONLY METHOD: Try Baseball Savant individual play video
             logger.info("🎯 Trying Baseball Savant individual play video...")
-            savant_video_url = self.get_baseball_savant_play_video(game_id, play_id, mlb_play_data)
+            savant_video_url = self.get_baseball_savant_play_video(
+                game_id, play_id, mlb_play_data, broadcast_preference
+            )
             
             if not savant_video_url:
                 # No fallback - fail cleanly with specific error message
                 logger.warning(f"❌ No Baseball Savant video available for play {play_id} in game {game_id}")
                 return None
                 
-            logger.info("✅ Found Baseball Savant play video, creating GIF...")
+            logger.info(f"✅ Found Baseball Savant play video, creating {output_format.upper()}...")
             
             event_type = 'play'
             if mlb_play_data:
                 event_type = mlb_play_data.get('result', {}).get('event', 'play').lower().replace(' ', '_')
             
-            gif_filename = f"mlb_savant_{event_type}_{game_id}_{play_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.gif"
-            gif_path = self.temp_dir / gif_filename
+            # Choose file extension based on output format
+            file_ext = 'mp4' if output_format.lower() == 'mp4' else 'gif'
+            output_filename = f"mlb_savant_{event_type}_{game_id}_{play_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{file_ext}"
+            output_path = self.temp_dir / output_filename
             
-            success = self.download_and_convert_to_gif(savant_video_url, str(gif_path))
-            
-            if success and gif_path.exists():
-                logger.info(f"✅ Successfully created Baseball Savant GIF: {gif_path}")
-                return str(gif_path)
+            if output_format.lower() == 'mp4':
+                success = self.download_and_convert_to_video(savant_video_url, str(output_path))
             else:
-                logger.error(f"❌ Failed to create GIF from Baseball Savant video for play {play_id}")
+                success = self.download_and_convert_to_gif(savant_video_url, str(output_path))
+            
+            if success and output_path.exists():
+                logger.info(f"✅ Successfully created Baseball Savant {output_format.upper()}: {output_path}")
+                return str(output_path)
+            else:
+                logger.error(f"❌ Failed to create {output_format.upper()} from Baseball Savant video for play {play_id}")
                 return None
             
         except Exception as e:
-            logger.error(f"Error creating GIF for play {play_id} in game {game_id}: {e}")
+            logger.error(f"Error creating {output_format.upper()} for play {play_id} in game {game_id}: {e}")
             return None
     
     def cleanup_temp_files(self):

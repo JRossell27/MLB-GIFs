@@ -995,59 +995,65 @@
                 return 0;
             });
 
-            container.innerHTML = sortedGames.map(game => `
-                <div class="game-card ${game.category}" data-game-id="${game.game_id}">
-                    <div class="game-status-badge ${game.category}">${game.category}</div>
-                    
-                    <div class="game-header">
-                        <div class="team-matchup">
-                            <div class="team-section away">
-                                <div class="team-logo">${game.away_team}</div>
-                                <div class="team-content">
-                                    <div class="team-name">${game.away_team}</div>
-                                    <div class="team-score">${game.away_score}</div>
-                                </div>
-                            </div>
-                            
-                            <div class="vs-divider">@</div>
-                            
-                            <div class="team-section home">
-                                <div class="team-logo">${game.home_team}</div>
-                                <div class="team-content">
-                                    <div class="team-name">${game.home_team}</div>
-                                    <div class="team-score">${game.home_score}</div>
-                                </div>
-                            </div>
-                        </div>
+            let html = '';
+            sortedGames.forEach(game => {
+                html += `
+                    <div class="game-card ${game.category}" data-game-id="${game.game_id}">
+                        <div class="game-status-badge ${game.category}">${game.category}</div>
                         
-                        <div class="game-details">
-                            <div class="game-detail">
-                                <div class="game-detail-label">Status</div>
-                                <div class="game-detail-value">${game.game_state}</div>
-                            </div>
-                            ${game.inning && game.inning_state ? `
-                                <div class="game-detail">
-                                    <div class="game-detail-label">Inning</div>
-                                    <div class="game-detail-value">${game.inning_state}</div>
+                        <div class="game-header">
+                            <div class="team-matchup">
+                                <div class="team-section away">
+                                    <div class="team-logo">${game.away_team}</div>
+                                    <div class="team-content">
+                                        <div class="team-name">${game.away_team}</div>
+                                        <div class="team-score">${game.away_score}</div>
+                                    </div>
                                 </div>
-                            ` : ''}
-                            <div class="game-detail">
-                                <div class="game-detail-label">Venue</div>
-                                <div class="game-detail-value">${game.venue || 'TBD'}</div>
+                                
+                                <div class="vs-divider">@</div>
+                                
+                                <div class="team-section home">
+                                    <div class="team-logo">${game.home_team}</div>
+                                    <div class="team-content">
+                                        <div class="team-name">${game.home_team}</div>
+                                        <div class="team-score">${game.home_score}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="game-details">
+                                <div class="game-detail">
+                                    <div class="game-detail-label">Status</div>
+                                    <div class="game-detail-value">${game.game_state}</div>
+                                </div>
+                                ${game.inning && game.inning_state ? `
+                                    <div class="game-detail">
+                                        <div class="game-detail-label">Inning</div>
+                                        <div class="game-detail-value">${game.inning_state}</div>
+                                    </div>
+                                ` : ''}
+                                <div class="game-detail">
+                                    <div class="game-detail-label">Venue</div>
+                                    <div class="game-detail-value">${game.venue || 'TBD'}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pitch-data-section">
+                            <button class="load-pitch-btn" onclick="loadPitchData(${game.game_id}, this)">
+                                📊 Load Pitch Data
+                            </button>
+                            <div id="pitches-${game.game_id}" class="no-pitches" style="display: none;">
+                                No pitch data loaded
                             </div>
                         </div>
                     </div>
+                `;
+            });
 
-                    <div class="pitch-data-section">
-                        <button class="load-pitch-btn" onclick="loadPitchData(${game.game_id}, this)">
-                            📊 Load Pitch Data
-                        </button>
-                        <div id="pitches-${game.game_id}" class="no-pitches" style="display: none;">
-                            No pitch data loaded
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+            document.getElementById('games-container').innerHTML = html;
+            attachEventListeners();
         }
 
         async function loadPitchData(gameId, button) {
@@ -1481,16 +1487,43 @@
                                 ${play.description}
                             </div>
                             
+                            <div class="play-meta">
+                                <span class="play-impact" data-impact="${play.impact_score}">
+                                    Impact: ${(play.impact_score * 100).toFixed(1)}%
+                                </span>
+                                <span class="play-leverage">Leverage: ${play.leverage_index.toFixed(2)}</span>
+                                <span class="play-wpa">WPA: ${play.wpa >= 0 ? '+' : ''}${play.wpa.toFixed(3)}</span>
+                            </div>
+                            
                             <div class="play-actions">
-                                <button class="btn btn-primary create-gif-btn" 
-                                        onclick="createHighImpactGif('${play.play_id}', this)"
-                                        ${play.gif_created ? 'disabled' : ''}>
-                                    ${play.gif_processing ? 
-                                        '<div class="loading"></div> Creating...' : 
-                                        play.gif_created ? 
-                                            '✅ GIF Created' : 
-                                            '🎬 Create GIF'
-                                    }
+                                <button class="btn create-gif-btn" 
+                                        data-play-id="${play.play_id}"
+                                        data-home-team="${play.home_team}"
+                                        data-away-team="${play.away_team}"
+                                        ${play.gif_processing ? 'disabled' : ''}>
+                                    ${play.gif_processing ? '⏳ Processing...' : 
+                                      play.gif_created ? '✅ GIF Created' : '🎬 Create GIF'}
+                                </button>
+                                
+                                <!-- Advanced options (initially hidden) -->
+                                <div class="gif-options" style="display: none;">
+                                    <label>Format:</label>
+                                    <select class="format-select">
+                                        <option value="gif">GIF</option>
+                                        <option value="mp4">MP4 Video</option>
+                                    </select>
+                                    
+                                    <label>Broadcast:</label>
+                                    <select class="broadcast-select">
+                                        <option value="auto">Auto (Smart)</option>
+                                        <option value="home">Home Team</option>
+                                        <option value="away">Away Team</option>
+                                        <option value="mets">Mets Preferred</option>
+                                    </select>
+                                </div>
+                                
+                                <button class="btn btn-small toggle-options" data-play-id="${play.play_id}">
+                                    ⚙️ Options
                                 </button>
                             </div>
                         </div>
@@ -1499,43 +1532,102 @@
             });
             
             container.innerHTML = html;
+            attachEventListeners();
+            
+            // Show the high-impact view
+            showHighImpactView(plays.length, gamesWithHighImpact.size);
         }
 
-        async function createHighImpactGif(playId, button) {
-            // Show loading state
-            const originalText = button.textContent;
-            button.disabled = true;
-            button.innerHTML = '<div class="loading"></div> Creating GIF...';
-            
-            try {
-                const response = await fetch('/api/create_gif', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        play_id: playId
-                    })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    showToast('🎬 High-impact GIF created and sent to Telegram!', 'success');
-                    button.textContent = '✅ GIF Created';
-                    button.classList.add('success');
-                } else {
-                    showToast(`❌ ${result.error}`, 'error');
-                    button.textContent = originalText;
-                    button.disabled = false;
+        // Add event listeners for create GIF buttons and option toggles
+        function attachEventListeners() {
+            // Create GIF button listeners
+            document.querySelectorAll('.create-gif-btn').forEach(button => {
+                if (!button.hasAttribute('data-listener-attached')) {
+                    button.addEventListener('click', handleCreateGif);
+                    button.setAttribute('data-listener-attached', 'true');
                 }
-
-            } catch (error) {
-                console.error('Error creating GIF:', error);
-                showToast('❌ Failed to create GIF', 'error');
-                button.textContent = originalText;
-                button.disabled = false;
+            });
+            
+            // Options toggle listeners
+            document.querySelectorAll('.toggle-options').forEach(button => {
+                if (!button.hasAttribute('data-listener-attached')) {
+                    button.addEventListener('click', toggleGifOptions);
+                    button.setAttribute('data-listener-attached', 'true');
+                }
+            });
+        }
+        
+        function toggleGifOptions(event) {
+            const playId = event.target.getAttribute('data-play-id');
+            const optionsDiv = event.target.parentElement.querySelector('.gif-options');
+            
+            if (optionsDiv.style.display === 'none') {
+                optionsDiv.style.display = 'block';
+                event.target.textContent = '🔽 Hide Options';
+            } else {
+                optionsDiv.style.display = 'none';
+                event.target.textContent = '⚙️ Options';
             }
+        }
+        
+        function handleCreateGif(event) {
+            const button = event.target;
+            const playId = button.getAttribute('data-play-id');
+            const homeTeam = button.getAttribute('data-home-team');
+            const awayTeam = button.getAttribute('data-away-team');
+            
+            // Get selected options from the same play's options div
+            const playDiv = button.closest('.play-card');
+            const formatSelect = playDiv.querySelector('.format-select');
+            const broadcastSelect = playDiv.querySelector('.broadcast-select');
+            
+            const outputFormat = formatSelect ? formatSelect.value : 'gif';
+            const broadcastPreference = broadcastSelect ? broadcastSelect.value : 'auto';
+            
+            createGifForPlay(playId, outputFormat, broadcastPreference, button, homeTeam, awayTeam);
+        }
+        
+        function createGifForPlay(playId, outputFormat = 'gif', broadcastPreference = 'auto', button, homeTeam, awayTeam) {
+            // Disable button and show processing state
+            button.disabled = true;
+            const originalText = button.textContent;
+            button.innerHTML = '⏳ Creating...';
+            
+            const formatName = outputFormat === 'mp4' ? 'Video' : 'GIF';
+            
+            fetch('/api/create_gif', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    play_id: playId,
+                    output_format: outputFormat,
+                    broadcast_preference: broadcastPreference
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    button.innerHTML = `✅ ${formatName} Created`;
+                    showToast(`${formatName} created and sent to Telegram!`, 'success');
+                    
+                    // Auto-refresh data to show updated state
+                    setTimeout(() => {
+                        loadDashboardData();
+                    }, 2000);
+                } else {
+                    button.disabled = false;
+                    button.innerHTML = originalText;
+                    showToast(`Error creating ${formatName.toLowerCase()}: ${data.error}`, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                button.disabled = false;
+                button.innerHTML = originalText;
+                showToast(`Network error creating ${formatName.toLowerCase()}`, 'error');
+            });
         }
 
         function showToast(message, type = 'success') {

@@ -63,33 +63,33 @@ class MetsScoringPlay:
 
 class MetsScoringBackgroundTracker:
     def __init__(self):
+        self.monitoring = False
         self.api_base = "https://statsapi.mlb.com/api/v1"
         self.gif_integration = BaseballSavantGIFIntegration()
         
-        # Tracking state
-        self.monitoring = False
-        self.start_time = None
-        self.last_check = None
-        self.processed_plays: Set[str] = set()
+        # Storage for tracking
         self.scoring_plays: List[MetsScoringPlay] = []
-        self.processing_queue = queue.Queue()
+        self.processed_plays: Dict[int, Set[str]] = {}  # Game ID -> Set of processed play keys
+        self.processing_queue = queue.Queue(maxsize=50)
         
-        # Stats
+        # Statistics
         self.stats = {
             'plays_detected': 0,
             'gifs_created': 0,
             'notifications_sent': 0,
-            'errors': 0
+            'errors': 0,
+            'uptime_start': None
         }
         
-        # Keep only recent plays in memory (last 100)
-        self.max_plays_memory = 100
+        # Threads
+        self.monitoring_thread = None
+        self.processing_thread = None
         
-        # Keep-alive settings
+        # Timing
+        self.last_check = None
         self.keep_alive_url = "https://mlb-gifs.onrender.com/"
-        self.monitor_interval = 120  # 2 minutes
         
-        logger.info("✅ Mets Scoring Plays tracker initialized")
+        logger.info("✅ Mets Scoring Background Tracker initialized")
     
     def start_monitoring(self):
         """Start the background monitoring thread"""
@@ -109,11 +109,11 @@ class MetsScoringBackgroundTracker:
         """Main monitoring loop - checks every 2 minutes"""
         while self.monitoring:
             try:
-                self._check_for_mets_scoring_plays()
+                self._check_mets_games_for_scoring_plays()
                 self._send_keep_alive_ping()
                 self.last_check = datetime.now()
                 logger.info("⏰ Waiting 2 minutes before next Mets scoring check...")
-                time.sleep(self.monitor_interval)
+                time.sleep(120)
             except Exception as e:
                 logger.error(f"Error in Mets scoring monitoring loop: {e}")
                 self.stats['errors'] += 1
@@ -133,187 +133,119 @@ class MetsScoringBackgroundTracker:
                 self.stats['errors'] += 1
                 time.sleep(10)
     
-    def _check_for_mets_scoring_plays(self):
-        """Check for new Mets scoring plays"""
+    def _check_mets_games_for_scoring_plays(self):
+        """Check all Mets games for new scoring plays"""
         try:
-            mets_games = self._get_mets_games_today()
+            # Get current date for game lookup
+            current_date = self._get_current_date()
             
-            if not mets_games:
-                logger.info("📅 No Mets games found for today")
+            # Get all games for current date
+            url = f"https://statsapi.mlb.com/api/v1/schedule?sportId=1&date={current_date}&hydrate=game(content(editorial(recap))),linescore,team,person"
+            response = requests.get(url, timeout=15)
+            
+            if response.status_code != 200:
+                logger.warning(f"Failed to get MLB schedule: {response.status_code}")
                 return
-            
-            logger.info(f"🔍 Checking {len(mets_games)} Mets games for scoring plays...")
-            
-            for game in mets_games:
-                self._scan_game_for_scoring_plays(game)
-                
-        except Exception as e:
-            logger.error(f"Error checking for Mets scoring plays: {e}")
-            self.stats['errors'] += 1
-    
-    def _get_mets_games_today(self) -> List[Dict]:
-        """Get today's Mets games"""
-        try:
-            eastern = pytz.timezone('US/Eastern')
-            today = datetime.now(eastern).strftime('%Y-%m-%d')
-            
-            # Check if we should use a test date
-            test_date = os.environ.get('TEST_DATE')
-            if test_date:
-                today = test_date
-            
-            url = f"{self.api_base}/schedule"
-            params = {
-                'sportId': 1,
-                'date': today,
-                'teamId': 121,  # Mets team ID
-                'hydrate': 'game(content(editorial(recap))),linescore,team'
-            }
-            
-            response = requests.get(url, params=params, timeout=15)
-            response.raise_for_status()
             
             data = response.json()
-            games = []
+            games = data.get('dates', [{}])[0].get('games', [])
             
-            for date_entry in data.get('dates', []):
-                for game in date_entry.get('games', []):
-                    # Only include games that are live or completed
-                    status_code = game.get('status', {}).get('statusCode')
-                    if status_code in ['I', 'F', 'O']:  # In Progress, Final, Official
-                        games.append(game)
-            
-            return games
-            
-        except Exception as e:
-            logger.error(f"Error fetching Mets games: {e}")
-            return []
-    
-    def _scan_game_for_scoring_plays(self, game_data: Dict):
-        """Scan a specific game for new Mets scoring plays"""
-        try:
-            game_id = game_data['gamePk']
-            plays_data = self._get_game_plays(game_id)
-            
-            if not plays_data:
-                return
-            
-            new_plays_count = 0
-            
-            for play_data in plays_data:
-                play_id = f"{game_id}_{play_data.get('atBatIndex', 0)}"
+            # Filter for Mets games
+            mets_games = []
+            for game in games:
+                home_team = game.get('teams', {}).get('home', {}).get('team', {})
+                away_team = game.get('teams', {}).get('away', {}).get('team', {})
                 
-                # Skip if already processed
-                if play_id in self.processed_plays:
+                if (home_team.get('id') == 121 or away_team.get('id') == 121):  # 121 = Mets
+                    mets_games.append(game)
+            
+            logger.info(f"Found {len(mets_games)} Mets games on {current_date}")
+            
+            for game in mets_games:
+                game_id = game['gamePk']
+                game_state = game.get('status', {}).get('detailedState', '')
+                
+                # Skip games that haven't started
+                if game_state in ['Scheduled', 'Pre-Game', 'Warmup']:
                     continue
                 
-                # Check if this is a Mets scoring play
-                scoring_play = self._check_if_mets_scoring_play(play_data, game_data)
-                if scoring_play:
-                    logger.info(f"🎯 NEW METS SCORING PLAY: {scoring_play.event} by {scoring_play.batter} ({scoring_play.runs_scored} runs)")
-                    
-                    # Add to queue for processing
-                    self.processing_queue.put(scoring_play)
-                    self.scoring_plays.append(scoring_play)
-                    self.stats['plays_detected'] += 1
-                    new_plays_count += 1
+                logger.info(f"Checking Mets game {game_id} ({game_state})")
                 
-                # Mark as processed regardless
-                self.processed_plays.add(play_id)
-            
-            if new_plays_count > 0:
-                logger.info(f"🔍 Scanned game {game_id} - found {new_plays_count} new Mets scoring plays")
-            else:
-                logger.info(f"🔍 Scanned {len(plays_data)} plays in game {game_id} - no new Mets scoring plays")
+                try:
+                    # Get detailed play-by-play data
+                    play_url = f"https://statsapi.mlb.com/api/v1.1/game/{game_id}/feed/live"
+                    play_response = requests.get(play_url, timeout=15)
+                    
+                    if play_response.status_code != 200:
+                        logger.warning(f"Failed to get play data for game {game_id}")
+                        continue
+                    
+                    play_data = play_response.json()
+                    all_plays = play_data.get('liveData', {}).get('plays', {}).get('allPlays', [])
+                    
+                    # Create unique game+play key for tracking
+                    if game_id not in self.processed_plays:
+                        self.processed_plays[game_id] = set()
+                    
+                    new_scoring_plays = []
+                    
+                    for play in all_plays:
+                        about = play.get('about', {})
+                        play_key = f"{about.get('atBatIndex', 0)}_{about.get('playIndex', 0)}"
+                        
+                        # Skip if we've already processed this play
+                        if play_key in self.processed_plays[game_id]:
+                            continue
+                        
+                        # Check if this is a Mets scoring play
+                        scoring_play = self._check_if_mets_scoring_play(play, play_data.get('gameData', {}))
+                        
+                        if scoring_play:
+                            # Mark as processed BEFORE adding to queue to avoid duplicates
+                            self.processed_plays[game_id].add(play_key)
+                            
+                            # Check if we've already processed this exact scoring play
+                            duplicate_found = False
+                            for existing_play in self.scoring_plays:
+                                if (existing_play.game_id == scoring_play.game_id and 
+                                    existing_play.play_id == scoring_play.play_id):
+                                    duplicate_found = True
+                                    break
+                            
+                            if not duplicate_found:
+                                new_scoring_plays.append(scoring_play)
+                                self.scoring_plays.append(scoring_play)
+                                self.stats['plays_detected'] += 1
+                                
+                                # Keep only recent 50 plays
+                                if len(self.scoring_plays) > 50:
+                                    self.scoring_plays.pop(0)
+                                
+                                logger.info(f"🎉 NEW Mets scoring play: {scoring_play.event} by {scoring_play.batter}")
+                        else:
+                            # Mark non-scoring plays as processed too
+                            self.processed_plays[game_id].add(play_key)
+                    
+                    # Process new scoring plays
+                    for scoring_play in new_scoring_plays:
+                        if not self.processing_queue.full():
+                            self.processing_queue.put(scoring_play)
+                            logger.info(f"✅ Added scoring play to processing queue: {scoring_play.event}")
+                        else:
+                            logger.warning("GIF processing queue is full!")
+                
+                except Exception as e:
+                    logger.error(f"Error processing Mets game {game_id}: {e}")
+                    continue
                 
         except Exception as e:
-            logger.error(f"Error scanning game for Mets scoring plays: {e}")
+            logger.error(f"Error checking Mets games: {e}")
             self.stats['errors'] += 1
     
-    def _get_game_plays(self, game_id: int) -> List[Dict]:
-        """Get all plays for a specific game"""
-        try:
-            endpoints_to_try = [
-                f"https://statsapi.mlb.com/api/v1/game/{game_id}/playByPlay",
-                f"https://statsapi.mlb.com/api/v1.1/game/{game_id}/playByPlay",
-            ]
-            
-            for endpoint in endpoints_to_try:
-                try:
-                    response = requests.get(endpoint, timeout=15)
-                    if response.status_code == 200:
-                        data = response.json()
-                        plays = data.get('allPlays', [])
-                        if plays:
-                            return plays
-                except:
-                    continue
-            
-            return []
-            
-        except Exception as e:
-            logger.error(f"Error getting plays for game {game_id}: {e}")
-            return []
-    
-    def _check_if_mets_scoring_play(self, play_data: Dict, game_data: Dict) -> Optional[MetsScoringPlay]:
-        """Check if a play is a Mets scoring play and return MetsScoringPlay object"""
-        try:
-            result = play_data.get('result', {})
-            about = play_data.get('about', {})
-            matchup = play_data.get('matchup', {})
-            
-            # Check if Mets are batting (need to determine based on game data)
-            mets_team_id = 121
-            home_team_id = game_data.get('teams', {}).get('home', {}).get('team', {}).get('id')
-            away_team_id = game_data.get('teams', {}).get('away', {}).get('team', {}).get('id')
-            
-            # Determine if Mets are batting this half-inning
-            mets_batting = False
-            half_inning = about.get('halfInning', '')
-            
-            if mets_team_id == home_team_id and half_inning == 'bottom':
-                mets_batting = True
-            elif mets_team_id == away_team_id and half_inning == 'top':
-                mets_batting = True
-            
-            if not mets_batting:
-                return None
-            
-            # Check if runs were scored on this play
-            runs_scored = result.get('homeScore', 0) - about.get('homeScore', 0) if mets_team_id == home_team_id else result.get('awayScore', 0) - about.get('awayScore', 0)
-            
-            # If no runs scored, not a scoring play
-            if runs_scored <= 0:
-                return None
-            
-            # Get RBI count
-            rbi_count = result.get('rbi', 0)
-            
-            # Create MetsScoringPlay object
-            scoring_play = MetsScoringPlay(
-                play_id=f"{game_data['gamePk']}_{about.get('atBatIndex', 0)}",
-                game_id=game_data['gamePk'],
-                game_date=game_data['gameDate'][:10],
-                inning=about.get('inning', 0),
-                half_inning=half_inning,
-                batter=matchup.get('batter', {}).get('fullName', ''),
-                pitcher=matchup.get('pitcher', {}).get('fullName', ''),
-                description=result.get('description', ''),
-                event=result.get('event', ''),
-                runs_scored=runs_scored,
-                rbi_count=rbi_count,
-                home_score=about.get('homeScore', 0),
-                away_score=about.get('awayScore', 0),
-                leverage_index=play_data.get('leverageIndex', 1.0),
-                wpa=play_data.get('winProbabilityAdded', 0.0),
-                timestamp=datetime.now()
-            )
-            
-            return scoring_play
-            
-        except Exception as e:
-            logger.error(f"Error checking if Mets scoring play: {e}")
-            return None
+    def _get_current_date(self):
+        """Get the current date in the format YYYY-MM-DD"""
+        eastern = pytz.timezone('US/Eastern')
+        return datetime.now(eastern).strftime('%Y-%m-%d')
     
     def _process_scoring_play(self, scoring_play: MetsScoringPlay):
         """Process a Mets scoring play - create GIF and send notification"""
@@ -435,9 +367,9 @@ class MetsScoringBackgroundTracker:
     
     def cleanup_memory(self):
         """Clean up old plays to prevent memory bloat"""
-        if len(self.scoring_plays) > self.max_plays_memory:
+        if len(self.scoring_plays) > 50:
             # Keep only the most recent plays
-            self.scoring_plays = sorted(self.scoring_plays, key=lambda x: x.timestamp, reverse=True)[:self.max_plays_memory]
+            self.scoring_plays = sorted(self.scoring_plays, key=lambda x: x.timestamp, reverse=True)[:50]
             logger.info(f"🧹 Cleaned up old scoring plays, kept {len(self.scoring_plays)} recent ones")
 
 # Global tracker instance
